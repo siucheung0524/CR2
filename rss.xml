@@ -12,7 +12,7 @@
     
     <item>
       <title>2026-01-05 Bad Girl 大過佬</title>
-      <pubDate>Mon, 05 Jan 2026 04:17:21 +0800</pubDate>
+      <pubDate>Mon, 05 Jan 2026 12:00:00 +0800</pubDate>
       <guid isPermaLink="false">bgog-20260105</guid>
       <enclosure url="https://hkfm903.live/recordings/Bad%20Girl%E5%A4%A7%E9%81%8E%E4%BD%AC/20260105_1000_Bad_Girl%E5%A4%A7%E9%81%8E%E4%BD%AC.aac" length="0" type="audio/aac" />
       <itunes:duration>02:00:00</itunes:duration>
@@ -28,7 +28,7 @@
 
     <item>
       <title>2026-01-01 Bad Girl 大過佬</title>
-      <pubDate>Thur, 01 Jan 2026 12:00:00 +0800</pubDate>
+      <pubDate>Thu, 01 Jan 2026 12:00:00 +0800</pubDate>
       <guid isPermaLink="false">bgog-20260101</guid>
       <enclosure url="https://hkfm903.live/recordings/Bad%20Girl%E5%A4%A7%E9%81%8E%E4%BD%AC/20260101_1000_Bad_Girl%E5%A4%A7%E9%81%8E%E4%BD%AC.aac" length="0" type="audio/aac" />
       <itunes:duration>02:00:00</itunes:duration>
@@ -37,7 +37,7 @@
     
     <item>
       <title>Podcast 啟動</title>
-      <pubDate>Mon, 05 Jan 2026 00:00:00 +0800</pubDate>
+      <pubDate>Thu, 01 Jan 2026 00:00:00 +0800</pubDate>
       <guid isPermaLink="false">init-post</guid>
       <description>Podcast RSS 自動抓取服務已啟動。</description>
     </item>
