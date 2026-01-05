@@ -16,10 +16,26 @@
     <itunes:category text="Comedy" />
     <itunes:explicit>false</itunes:explicit>
 
+       <item>
+      <title>2026-01-02 聖艾粒LaLaLaLa</title>
+      <pubDate>Fri, 02 Jan 2026 19:00:00 +0800</pubDate>
+      <guid isPermaLink="false">bgog-20260102</guid>
+      <enclosure url="http://hkfm903.live/recordings/%E8%81%96%E8%89%BE%E7%B2%92LaLaLaLa/20260102_1700_%E8%81%96%E8%89%BE%E7%B2%92LaLaLaLa.aac" length="0" type="audio/aac" />
+      <itunes:duration>02:00:00</itunes:duration>
+    </item>
+
+       <item>
+      <title>2026-01-01 聖艾粒LaLaLaLa</title>
+      <pubDate>Thu, 01 Jan 2026 19:00:00 +0800</pubDate>
+      <guid isPermaLink="false">bgog-20260101</guid>
+      <enclosure url="https://hkfm903.live/recordings/%E8%81%96%E8%89%BE%E7%B2%92LaLaLaLa/20260101_1700_%E8%81%96%E8%89%BE%E7%B2%92LaLaLaLa.aac" length="0" type="audio/aac" />
+      <itunes:duration>02:00:00</itunes:duration>
+    </item>
+
     <item>
       <title>聖艾粒 Podcast 服務啟動</title>
       <itunes:episodeType>full</itunes:episodeType>
-      <pubDate>Mon, 05 Jan 2026 00:00:00 +0800</pubDate>
+      <pubDate>Thu, 01 Jan 2026 19:00:00 +0800</pubDate>
       <guid isPermaLink="false">ilub-init</guid>
       <description>聖艾粒LaLaLaLa RSS 自動抓取服務已成功建立。</description>
       <itunes:explicit>false</itunes:explicit>
