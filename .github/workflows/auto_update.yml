@@ -1,0 +1,33 @@
+name: Update Podcast RSS
+
+on:
+  schedule:
+    # 每天下午 1 點執行一次 (UTC 05:00 = HK 13:00)
+    - cron: '0 5 * * *'
+  workflow_dispatch: # 允許你手動按按鈕測試
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run update script
+        run: python update_podcast.py
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add rss.xml
+          git commit -m "Auto-update: New episode added" || exit 0
+          git push
