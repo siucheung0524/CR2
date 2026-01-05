@@ -3,12 +3,12 @@
     xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" 
     xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>聖艾粒LaLaLaLa (903 存檔)</title>
+    <title>聖艾粒LaLaLaLa</title>
     <link>https://hkfm903.live/</link>
     <language>zh-hk</language>
     <itunes:author>艾粒 (I Love You Boyz)</itunes:author>
     <itunes:summary>商業電台 903 節目《聖艾粒LaLaLaLa》每日存檔</itunes:summary>
-    <description>商業電台 903 節目《聖艾粒LaLaLaLa》每日存檔。</description>
+    <description>商業電台 903 節目《聖艾粒LaLaLaLa》每日存檔</description>
     <itunes:owner>
       <itunes:name>艾粒</itunes:name>
     </itunes:owner>
