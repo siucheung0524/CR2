@@ -51,8 +51,8 @@ def check_and_update():
             # 最後手段：直接猜測 (以 1700 或 1701 這種常見格式)
             today_str = now_hk.strftime("%Y%m%d")
             # 這裡我們試著撞幾個常見的時間點
-            for minute in ["1700", "1701", "1702", "1705"]:
-                test_url = f"https://hkfm903.live/recordings/%E8%81%96%E8%89%BE%E7%B2%92LaLaLaLa/{today_str}_{minute}_%E8%81%96%E8%89%BE%E7%B2%92LaLaLaLa.aac"
+            for minute in ["1000", "1001", "1002", "1005", "1009", "1010"]:
+                test_url = f"https://hkfm903.live/recordings/Bad%20Girl大過佬/{today_str}_{minute}_Bad_Girl大過佬.aac"
                 if requests.head(test_url).status_code == 200:
                     valid_links = [(today_str, test_url)]
                     break
