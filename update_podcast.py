@@ -1,85 +1,68 @@
 import subprocess
-import re
-from datetime import datetime, timedelta, timezone
 import os
-import urllib.parse
+from datetime import datetime, timedelta, timezone
 
 # --- 配置資訊 ---
 PODCAST_NAME = "Bad Girl 大過佬"
 RSS_FILE = "rss.xml"
 
 def get_status_code(url):
-    """使用系統 curl 指令獲取 HTTP 狀態碼"""
     try:
-        # 模擬 Chrome 的真實 curl 請求
-        cmd = [
-            'curl', '-s', '-o', '/dev/null', '-I', '-w', '%{http_code}',
-            '--connect-timeout', '5',
-            '-A', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            '-e', 'https://hkfm903.live/',
-            url
-        ]
+        # 使用 curl 獲取狀態碼
+        cmd = ['curl', '-s', '-o', '/dev/null', '-I', '-w', '%{http_code}', '--connect-timeout', '5', '-A', 'Mozilla/5.0', url]
         result = subprocess.run(cmd, capture_output=True, text=True)
         return result.stdout.strip()
-    except:
-        return "000"
+    except: return "000"
 
 def check_and_update():
     hk_tz = timezone(timedelta(hours=8))
     now_hk = datetime.now(hk_tz)
     today_str = now_hk.strftime("%Y%m%d")
     
-    print(f"[{PODCAST_NAME}] 檢查日期: {today_str}")
+    print(f"[{PODCAST_NAME}] 開始偵測今日有效檔名 ({today_str})...")
 
     found_url = None
-    show_path = "Bad Girl大過佬"
-    
-    print(f"[{PODCAST_NAME}] 開始使用 curl 引擎搜尋 10:00 - 10:25...")
-
+    # 掃描 10:00 到 10:25
     for m in range(0, 26):
         time_str = f"10{m:02d}"
-        # 同時測試空格版與底線版
-        for separator in [" ", "_"]:
-            raw_filename = f"{today_str}_{time_str}_Bad{separator}Girl大過佬.aac"
-            encoded_show = urllib.parse.quote(show_path)
-            encoded_file = urllib.parse.quote(raw_filename)
-            test_url = f"https://hkfm903.live/recordings/{encoded_show}/{encoded_file}"
+        # 同時嘗試「底線」和「空格(%20)」格式，因為這也可能變
+        for sep in ["_", "%20"]:
+            test_url = f"https://hkfm903.live/recordings/Bad%20Girl%E5%A4%A7%E9%81%8E%E4%BD%AC/{today_str}_{time_str}_Bad{sep}Girl%E5%A4%A7%E9%81%8E%E4%BD%AC.aac"
             
             code = get_status_code(test_url)
             
-            if time_str == "1009":
-                print(f"DEBUG (1009): {test_url} -> 狀態碼: {code}")
-
-            if code == "200":
-                print(f"✅ 成功命中！找到檔案。")
+            # 如果是 200 或 403，代表「抓到了！」
+            if code in ["200", "206", "403"]:
+                print(f"🎯 成功定位今日檔案網址: {test_url} (狀態碼: {code})")
                 found_url = test_url
                 break
         if found_url: break
 
-    if not found_url:
-        print(f"[{PODCAST_NAME}] curl 依然回傳 403 或找不到檔案。")
-        return
+    if found_url:
+        update_rss(found_url, today_str, now_hk)
+    else:
+        print(f"❌ 在 10:00-10:25 區間內未發現任何 403/200 檔案，今日可能尚未上架。")
 
-    # 更新 RSS 檔案
+def update_rss(url, date_str, now_obj):
     if not os.path.exists(RSS_FILE): return
-    with open(RSS_FILE, "r", encoding="utf-8") as f:
-        rss_content = f.read()
-
-    guid = f"bgog-{today_str}"
-    if guid not in rss_content:
-        pub_date_str = now_hk.strftime("%a, %d %b %Y 12:05:00 +0800")
+    with open(RSS_FILE, "r", encoding="utf-8") as f: content = f.read()
+    
+    guid = f"bgog-{date_str}"
+    if guid not in content:
+        pub_date = now_obj.strftime("%a, %d %b %Y 12:05:00 +0800")
         new_item = f"""    <item>
-      <title>{now_hk.strftime("%Y-%m-%d")} Bad Girl 大過佬</title>
-      <pubDate>{pub_date_str}</pubDate>
+      <title>{now_obj.strftime("%Y-%m-%d")} Bad Girl 大過佬</title>
+      <pubDate>{pub_date}</pubDate>
       <guid isPermaLink="false">{guid}</guid>
-      <enclosure url="{found_url}" length="0" type="audio/aac" />
+      <enclosure url="{url}" length="0" type="audio/aac" />
       <itunes:duration>02:00:00</itunes:duration>
     </item>
 """
-        updated_content = rss_content.replace("    <item>", new_item + "    <item>", 1)
         with open(RSS_FILE, "w", encoding="utf-8") as f:
-            f.write(updated_content)
-        print(f"[{PODCAST_NAME}] RSS 更新成功！")
+            f.write(content.replace("    <item>", new_item + "    <item>", 1))
+        print(f"✅ RSS 已更新！")
+    else:
+        print("集數已存在，不重複更新。")
 
 if __name__ == "__main__":
     check_and_update()
