@@ -21,7 +21,8 @@ def check_and_update():
     hk_tz = timezone(timedelta(hours=8))
     now_hk = datetime.now(hk_tz)
     
-    for i in range(3):
+    # 檢查最近 8 天 (補回 2/24 之後缺少的集數)
+    for i in range(8):
         target_date = now_hk - timedelta(days=i)
         date_str = target_date.strftime("%Y%m%d")
         if target_date.weekday() >= 5: continue
