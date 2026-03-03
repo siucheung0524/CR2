@@ -40,13 +40,11 @@ def check_and_update():
         html = fetch_html_via_proxy(SHOW_PAGE)
         
         # 解析正確連結
-        pattern = rf'recordings/[^"\'\s>]*{date_str}_([^"\'\s>]*)_Bad[^"\'\s>]*\.aac'
+        pattern = rf'src="(https?://[^"]*{date_str}[^"]*\.aac)"'
         match = re.search(pattern, html)
         
         if match:
-            found_time = match.group(1)
-            # 這裡我們處理檔名中的空格問題
-            actual_url = f"https://hkfm903.live/recordings/Bad%20Girl%E5%A4%A7%E9%81%8E%E4%BD%AC/{date_str}_{found_time}_Bad_Girl%E5%A4%A7%E9%81%8E%E4%BD%AC.aac"
+            actual_url = match.group(1)
             add_to_rss(actual_url, date_str, target_date)
         else:
             print(f"[{PODCAST_NAME}] 網頁上暫無 {date_str} 的連結。")
