@@ -1,4 +1,5 @@
 import requests
+import time
 import re
 import os
 import urllib.parse
@@ -24,22 +25,45 @@ def check_and_update():
     hk_tz = timezone(timedelta(hours=8))
     now_hk = datetime.now(hk_tz)
     
-    # 檢查最近 8 天 (補回 2/24 之後缺少的集數)
-    for i in range(8):
+    # 1. 檢查並補回過去 7 天缺少的集數 (i from 1 to 7)
+    for i in range(1, 8):
         target_date = now_hk - timedelta(days=i)
         date_str = target_date.strftime("%Y%m%d")
         if target_date.weekday() >= 5: continue
-        
-        # 排除尚未上架的今天
-        if i == 0 and int(now_hk.strftime("%H%M")) < 1200: continue
-        
-        # 檢查 RSS
         if is_in_rss(date_str): continue
 
-        print(f"[{PODCAST_NAME}] 正在透過 Google 抓取日期: {date_str}")
+        print(f"[{PODCAST_NAME}] 補抓過去日期: {date_str}")
         html = fetch_html_via_proxy(SHOW_PAGE)
+        pattern = rf'src="([^"]*{date_str}[^"]*\.aac)"'
+        match = re.search(pattern, html)
+        if match:
+            actual_url = match.group(1)
+            if actual_url.startswith("/"):
+                actual_url = "https://hkfm903.live" + actual_url
+            add_to_rss(actual_url, date_str, target_date)
+    
+    # 2. 檢查今天的集數
+    target_date = now_hk
+    date_str = target_date.strftime("%Y%m%d")
+    if target_date.weekday() >= 5:
+        return
         
-        # 解析正確連結
+    if is_in_rss(date_str):
+        print(f"[{PODCAST_NAME}] 今天的集數 {date_str} 已經在 RSS 中。")
+        return
+        
+    broadcast_time = 1200
+    
+    # 輪詢檢查今天新集數 (最長輪詢 30 次，每次間隔 60 秒，共約 30 分鐘)
+    max_attempts = 30
+    for attempt in range(max_attempts):
+        current_time = datetime.now(hk_tz)
+        if int(current_time.strftime("%H%M")) < broadcast_time:
+            print(f"[{PODCAST_NAME}] 當前時間 {current_time.strftime('%H:%M')} 尚未到上架時間 {broadcast_time}，今天先跳過。")
+            break
+            
+        print(f"[{PODCAST_NAME}] 第 {attempt+1}/{max_attempts} 次嘗試抓取今天 ({date_str}) 的連結...")
+        html = fetch_html_via_proxy(SHOW_PAGE)
         pattern = rf'src="([^"]*{date_str}[^"]*\.aac)"'
         match = re.search(pattern, html)
         
@@ -48,8 +72,13 @@ def check_and_update():
             if actual_url.startswith("/"):
                 actual_url = "https://hkfm903.live" + actual_url
             add_to_rss(actual_url, date_str, target_date)
+            break
         else:
-            print(f"[{PODCAST_NAME}] 網頁上暫無 {date_str} 的連結。")
+            if attempt < max_attempts - 1:
+                print(f"[{PODCAST_NAME}] 暫時未有連結，等待 60 秒後重試...")
+                time.sleep(60)
+            else:
+                print(f"[{PODCAST_NAME}] 已達到最大嘗試次數，今日未找到新連結。")
 
 def is_in_rss(date_str):
     if not os.path.exists(RSS_FILE): return False
