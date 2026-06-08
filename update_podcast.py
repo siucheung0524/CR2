@@ -40,11 +40,13 @@ def check_and_update():
         html = fetch_html_via_proxy(SHOW_PAGE)
         
         # 解析正確連結
-        pattern = rf'src="(https?://[^"]*{date_str}[^"]*\.aac)"'
+        pattern = rf'src="([^"]*{date_str}[^"]*\.aac)"'
         match = re.search(pattern, html)
         
         if match:
             actual_url = match.group(1)
+            if actual_url.startswith("/"):
+                actual_url = "https://hkfm903.live" + actual_url
             add_to_rss(actual_url, date_str, target_date)
         else:
             print(f"[{PODCAST_NAME}] 網頁上暫無 {date_str} 的連結。")
