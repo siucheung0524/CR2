@@ -252,26 +252,60 @@ def prune_old_releases(show_cfg, days_to_keep=14):
         if not tag.startswith(prefix):
             continue
 
+        # 判定過期依據：集數標籤日期或 GitHub 建立時間
+        is_old = False
+        date_match = re.search(r'(\d{8})', tag)
+        if date_match:
+            try:
+                tag_date = datetime.strptime(date_match.group(1), "%Y%m%d").replace(tzinfo=hk_tz)
+                if tag_date < cutoff_time:
+                    is_old = True
+            except ValueError:
+                pass
+
         created_at_str = rel.get("created_at", "")
-        try:
-            created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
-            if created_at < cutoff_time:
-                print(f"[{datetime.now()}] 發現過期 Release: {tag} (建立於 {created_at_str})，執行刪除...")
-                del_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/{rel['id']}"
+        if not is_old and created_at_str:
+            try:
+                created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+                if created_at < cutoff_time:
+                    is_old = True
+            except Exception:
+                pass
+
+        if is_old:
+            print(f"[{datetime.now()}] 發現過期 Release: {tag}，執行刪除...")
+            del_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/{rel['id']}"
+            try:
                 github_api_request(del_url, method="DELETE")
+            except Exception as err:
+                print(f"刪除 Release {tag} 失敗: {err}")
 
-                del_tag_url = f"https://api.github.com/repos/{GITHUB_REPO}/git/refs/tags/{tag}"
-                try:
-                    github_api_request(del_tag_url, method="DELETE")
-                except:
-                    pass
+            del_tag_url = f"https://api.github.com/repos/{GITHUB_REPO}/git/refs/tags/{tag}"
+            try:
+                github_api_request(del_tag_url, method="DELETE")
+            except Exception:
+                pass
 
-                pattern = rf'\s*<item>\s*<title>[^<]*</title>[\s\S]*?<guid[^>]*>{re.escape(tag)}</guid>[\s\S]*?</item>'
-                rss_content = re.sub(pattern, '', rss_content)
-                deleted_any = True
-                print(f"[{datetime.now()}] 成功清除過期 Release 與 RSS 項目: {tag}")
-        except Exception as err:
-            print(f"處理過期項目 {tag} 時發生錯誤: {err}")
+            pattern = rf'\s*<item>\s*<title>[^<]*</title>[\s\S]*?<guid[^>]*>{re.escape(tag)}</guid>[\s\S]*?</item>'
+            rss_content = re.sub(pattern, '', rss_content)
+            deleted_any = True
+            print(f"[{datetime.now()}] 成功清除過期 Release 與 RSS 項目: {tag}")
+
+    # 同步檢查並清理本地 recordings 資料夾中超過 14 天的舊檔
+    recordings_dir = os.path.join(SCRIPT_DIR, "recordings")
+    if os.path.exists(recordings_dir):
+        for fname in os.listdir(recordings_dir):
+            if fname.startswith(prefix):
+                m = re.search(r'(\d{8})', fname)
+                if m:
+                    try:
+                        fdate = datetime.strptime(m.group(1), "%Y%m%d").replace(tzinfo=hk_tz)
+                        if fdate < cutoff_time:
+                            fpath = os.path.join(recordings_dir, fname)
+                            os.remove(fpath)
+                            print(f"[{datetime.now()}] 成功清除本地過期暫存音檔: {fname}")
+                    except Exception:
+                        pass
 
     if deleted_any:
         with open(rss_file_path, "w", encoding="utf-8") as f:
