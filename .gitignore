@@ -1,0 +1,9 @@
+.env
+*.aac
+*.mp3
+*.m4a
+venv/
+__pycache__/
+*.log
+recordings/
+.DS_Store
