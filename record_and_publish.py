@@ -338,7 +338,7 @@ def main():
     parser.add_argument("--stream-url", type=str, default=None, help="自訂 M3U8 串流 (不指定則自動從網頁獲取)")
     parser.add_argument("--input-file", type=str, default=None, help="指定現有音檔路徑 (略過即時錄音，直接發布)")
     parser.add_argument("--date", type=str, default=None, help="指定集數日期 (格式: YYYYMMDD，預設從檔名或當日推算)")
-    parser.add_argument("--keep-local", action="store_true", help="發布後保留本地 AAC 音檔")
+    parser.add_argument("--clean-local", action="store_true", help="發布後立即刪除本地暫存音檔 (預設會保留並於 14 天後自動清理)")
     parser.add_argument("--skip-prune", action="store_true", help="跳過清理 14 天前舊檔")
     parser.add_argument("--dry-run", action="store_true", help="測試模式：不推送到 GitHub")
 
@@ -435,13 +435,14 @@ def main():
     # 6. Push 至 GitHub
     git_commit_and_push(show_cfg["rss_file"], show_cfg["name"], date_str)
 
-    # 7. 清理本地暫存檔案
-    if not args.keep_local:
-        # 如果是從外部檔案複製產生的暫存，清理它；但如果是使用者直接傳入的目標路徑則保留
+    # 7. 本地暫存檔案保留（預設保留以防上傳失敗或需要回溯，14天後由 prune_old_releases 自動清理）
+    if args.clean_local:
         if not (args.input_file and os.path.abspath(args.input_file) == os.path.abspath(output_path)):
             if os.path.exists(output_path):
                 os.remove(output_path)
-                print(f"[{datetime.now()}] 本地暫存音檔已清理完成。")
+                print(f"[{datetime.now()}] 本地暫存音檔已依要求清理完畢。")
+    else:
+        print(f"[{datetime.now()}] 本地音檔已安全保留於: {output_path} (將在 14 天後自動清理)")
 
     print(f"[{datetime.now()}] 全部流程圓滿完成！")
 
