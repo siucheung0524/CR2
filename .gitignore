@@ -2,8 +2,11 @@
 *.aac
 *.mp3
 *.m4a
+*.wav
+models/
 venv/
 __pycache__/
 *.log
 recordings/
 .DS_Store
+

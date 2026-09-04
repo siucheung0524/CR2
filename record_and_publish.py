@@ -346,6 +346,8 @@ def main():
     parser.add_argument("--date", type=str, default=None, help="指定集數日期 (格式: YYYYMMDD，預設從檔名或當日推算)")
     parser.add_argument("--clean-local", action="store_true", help="發布後立即刪除本地暫存音檔 (預設會保留並於 14 天後自動清理)")
     parser.add_argument("--skip-prune", action="store_true", help="跳過清理 14 天前舊檔")
+    parser.add_argument("--skip-remove-ads", action="store_true", help="跳過自動去廣告、新聞與交通切除")
+    parser.add_argument("--whisper-model", type=str, default=None, help="Whisper 模型路徑 (預設: models/ggml-base.bin)")
     parser.add_argument("--dry-run", action="store_true", help="測試模式：不推送到 GitHub")
 
     args = parser.parse_args()
@@ -422,9 +424,49 @@ def main():
 
         file_size = record_stream(stream_url, duration, output_path, headers_str=headers_str)
 
+    # 2.5 自動切除廣告、新聞、天氣與交通 (預設開啟)
+    if not args.skip_remove_ads:
+        try:
+            print(f"[{datetime.now()}] 正在啟動自動去廣告處理 (Whisper 粵語語意識別)...")
+            from ad_remover import process_audio_ad_removal, get_audio_duration
+            cleaned_filename = f"{show_cfg['guid_prefix']}{date_str}_cleaned.m4a"
+            cleaned_output_path = os.path.join(temp_dir, cleaned_filename)
+            final_path, is_cleaned, stats = process_audio_ad_removal(
+                output_path,
+                output_file=cleaned_output_path,
+                model_path=args.whisper_model
+            )
+            if is_cleaned and os.path.exists(final_path):
+                # 替換為純淨版音檔進行後續發布
+                output_path = final_path
+                file_size = os.path.getsize(output_path)
+                dur_sec = int(get_audio_duration(output_path))
+                dur_h = dur_sec // 3600
+                dur_m = (dur_sec % 3600) // 60
+                dur_s = dur_sec % 60
+                show_cfg["itunes_duration"] = f"{dur_h:02d}:{dur_m:02d}:{dur_s:02d}"
+                print(f"[{datetime.now()}] 去廣告完成！更新 Podcast 實際節目時長為: {show_cfg['itunes_duration']}")
+            else:
+                print(f"[{datetime.now()}] 未產出純淨版音檔或觸發安全回退，使用原始音檔繼續發布。")
+        except Exception as e:
+            print(f"[{datetime.now()}] ⚠️ 自動去廣告發生異常: {e}，安全保留原始音檔繼續發布。")
+
     if args.dry_run:
         print(f"[DRY-RUN] 測試模式完成，產出音檔: {output_path}")
         return
+
+    # 確保 itunes_duration 根據最終發布音檔的實際時長精確計算
+    try:
+        from ad_remover import get_audio_duration
+        dur_sec = int(get_audio_duration(output_path))
+        if dur_sec > 0:
+            dur_h = dur_sec // 3600
+            dur_m = (dur_sec % 3600) // 60
+            dur_s = dur_sec % 60
+            show_cfg["itunes_duration"] = f"{dur_h:02d}:{dur_m:02d}:{dur_s:02d}"
+            print(f"[{datetime.now()}] 發布前確認音檔實際時長: {show_cfg['itunes_duration']}")
+    except Exception:
+        pass
 
     # 3. 建立 Release 並上傳
     tag = f"{show_cfg['guid_prefix']}{date_str}"
