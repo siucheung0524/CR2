@@ -10,6 +10,13 @@
     <itunes:category text="Comedy" />
     <itunes:explicit>false</itunes:explicit>
     <item>
+      <title>2026-09-04 Bad Girl 大過佬</title>
+      <pubDate>Fri, 04 Sep 2026 12:05:00 +0800</pubDate>
+      <guid isPermaLink="false">bgog-20260904</guid>
+      <enclosure url="https://github.com/siucheung0524/CR2/releases/download/bgog-20260904/bgog-20260904.aac" length="24360134" type="audio/aac" />
+      <itunes:duration>01:56:00</itunes:duration>
+    </item>
+    <item>
       <title>2026-09-02 Bad Girl 大過佬</title>
       <pubDate>Wed, 02 Sep 2026 12:05:00 +0800</pubDate>
       <guid isPermaLink="false">bgog-20260902</guid>
