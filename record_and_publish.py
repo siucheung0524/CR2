@@ -18,6 +18,7 @@ ENV_FILE = os.path.join(SCRIPT_DIR, ".env")
 def load_env():
     token = os.environ.get("GITHUB_TOKEN")
     repo = os.environ.get("GITHUB_REPO", "siucheung0524/CR2")
+    worker_url = os.environ.get("CLOUDFLARE_WORKER_URL", "")
     if os.path.exists(ENV_FILE):
         with open(ENV_FILE, "r") as f:
             for line in f:
@@ -26,9 +27,11 @@ def load_env():
                     token = line.split("=", 1)[1].strip()
                 elif line.startswith("GITHUB_REPO="):
                     repo = line.split("=", 1)[1].strip()
-    return token, repo
+                elif line.startswith("CLOUDFLARE_WORKER_URL="):
+                    worker_url = line.split("=", 1)[1].strip()
+    return token, repo, worker_url
 
-GITHUB_TOKEN, GITHUB_REPO = load_env()
+GITHUB_TOKEN, GITHUB_REPO, CLOUDFLARE_WORKER_URL = load_env()
 
 # 配置：
 # Bad Girl 大過佬：10:07 開始錄，錄到 12:02 (1小時55分 + 2分鐘緩衝 = 116分鐘 / 6960秒)
@@ -122,6 +125,7 @@ def record_stream(m3u8_url, duration, output_file, headers_str=None):
         "-i", m3u8_url,
         "-vn",
         "-c:a", "copy",
+        "-movflags", "+faststart",
         "-t", str(duration),
         output_file
     ])
@@ -188,7 +192,8 @@ def create_release_and_upload(tag, title, file_path, filename):
     with open(file_path, "rb") as f:
         file_data = f.read()
 
-    upload_headers = {"Content-Type": "audio/aac"}
+    mime_type = "audio/x-m4a" if filename.endswith(".m4a") else ("audio/mpeg" if filename.endswith(".mp3") else "audio/aac")
+    upload_headers = {"Content-Type": mime_type}
     asset_info = github_api_request(upload_url, method="POST", data=file_data, headers=upload_headers)
     download_url = asset_info.get("browser_download_url")
     print(f"[{datetime.now()}] 音檔上傳成功！下載連結: {download_url}")
@@ -203,12 +208,13 @@ def update_rss(rss_file_path, show_name, date_str, date_obj, download_url, file_
     guid = f"{show_cfg['guid_prefix']}{date_str}"
     pub_date = date_obj.strftime(f"%a, %d %b %Y {show_cfg['time_str']} +0800")
     formatted_date = date_obj.strftime("%Y-%m-%d")
+    enclosure_mime = "audio/x-m4a" if download_url.endswith(".m4a") else ("audio/mpeg" if download_url.endswith(".mp3") else "audio/aac")
 
     new_item = f"""    <item>
       <title>{formatted_date} {show_name}</title>
       <pubDate>{pub_date}</pubDate>
       <guid isPermaLink="false">{guid}</guid>
-      <enclosure url="{download_url}" length="{file_size}" type="audio/aac" />
+      <enclosure url="{download_url}" length="{file_size}" type="{enclosure_mime}" />
       <itunes:duration>{show_cfg['itunes_duration']}</itunes:duration>
     </item>
 """
@@ -372,13 +378,13 @@ def main():
         print(f"來源檔案: {args.input_file}")
         print("=" * 60)
 
-        asset_filename = f"{show_cfg['guid_prefix']}{date_str}.aac"
+        asset_filename = f"{show_cfg['guid_prefix']}{date_str}.m4a"
         output_path = os.path.join(temp_dir, asset_filename)
 
         if os.path.abspath(args.input_file) == os.path.abspath(output_path):
             file_size = os.path.getsize(output_path)
         else:
-            print(f"[{datetime.now()}] 正在將音檔轉換/封裝為目標 AAC 格式: {output_path}...")
+            print(f"[{datetime.now()}] 正在將音檔轉換/封裝為 M4A (FastStart) 格式: {output_path}...")
             ffmpeg_bin = "/opt/homebrew/bin/ffmpeg" if os.path.exists("/opt/homebrew/bin/ffmpeg") else "ffmpeg"
             cmd = [
                 ffmpeg_bin,
@@ -386,6 +392,7 @@ def main():
                 "-i", args.input_file,
                 "-vn",
                 "-c:a", "copy",
+                "-movflags", "+faststart",
                 output_path
             ]
             subprocess.run(cmd, check=True)
@@ -410,7 +417,7 @@ def main():
             stream_url, headers_str = get_stream_url(show_cfg["channel"])
 
         # 2. 錄製音檔至暫存
-        asset_filename = f"{show_cfg['guid_prefix']}{date_str}.aac"
+        asset_filename = f"{show_cfg['guid_prefix']}{date_str}.m4a"
         output_path = os.path.join(temp_dir, asset_filename)
 
         file_size = record_stream(stream_url, duration, output_path, headers_str=headers_str)
@@ -422,7 +429,14 @@ def main():
     # 3. 建立 Release 並上傳
     tag = f"{show_cfg['guid_prefix']}{date_str}"
     release_title = f"{date_obj.strftime('%Y-%m-%d')} {show_cfg['name']}"
-    download_url = create_release_and_upload(tag, release_title, output_path, asset_filename)
+    raw_download_url = create_release_and_upload(tag, release_title, output_path, asset_filename)
+
+    if CLOUDFLARE_WORKER_URL:
+        proxy_base = CLOUDFLARE_WORKER_URL.rstrip('/')
+        download_url = f"{proxy_base}/releases/download/{tag}/{asset_filename}"
+        print(f"[{datetime.now()}] 套用 Cloudflare Worker Proxy 連結: {download_url}")
+    else:
+        download_url = raw_download_url
 
     # 4. 更新 RSS XML
     rss_path = os.path.join(SCRIPT_DIR, show_cfg["rss_file"])
