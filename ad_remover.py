@@ -94,6 +94,7 @@ PROGRAM_JINGLE_KEYWORDS = [
     "bad girl", "大過佬", "來大笑代替上路", "完美阿正", "笑爆嘴", "elsie", "alsie", "l.c", "小姐, l.c",
     "你公司最討厭", "最討厭的甚麼", "最討厭的是甚麼", "帶過老", "大過老", "代替上路",
     "大明星殺手", "即日上映", "大哥, 人生當中", "人生當中", "最悲的事", "戴眼鏡",
+    "能力測試", "探職員", "不要叫我大哥", "叫我怕你",
     "有人拐住你", "有人gua住你", "有人刮住你", "有人掛住你", "你知道不知道有人",
     "你拍拖嘅時候", "你拍拖的時候", "阿正 你拍拖", "阿鄭,你拍拖", "拍拖的時候最討厭", "拍拖嘅時候最討厭",
     "阿正,你拍拖", "我都冇男朋友", "我也沒有男朋友",
@@ -245,11 +246,13 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
         # 破口 #1 彈性窗口（10:30 / 17:30，通常落在 1300s ~ 1650s）：若即使沒報時，但出現開頭廣告台呼，亦自動啟動半點破口
         is_break1_window = (1300.0 <= f_sec <= 1650.0)
         is_break1_promo = is_break1_window and any(k in text for k in ["新1秒", "新一秒", "者1秒", "即是903", "世責903", "色測903", "即是九零三", "Chester", "肯倉", "恒基"])
+        # 破口 #1B 特約環節結束後中場廣告與宣傳（約落在 2140s ~ 2330s）
+        is_mid_promo = (2140.0 <= f_sec <= 2330.0) and any(k in text for k in ["高光時刻", "高官時刻", "中銀香港", "情情踏踏", "小小事", "思浪"])
 
-        if (is_half_hour or is_break1_promo) and not in_break:
+        if (is_half_hour or is_break1_promo or is_mid_promo) and not in_break:
             in_break = True
             break_type = "半點廣告破口"
-            break_start = f_sec if is_break1_promo else t_sec + 0.2
+            break_start = f_sec if (is_break1_promo or is_mid_promo) else t_sec + 0.2
             print(f"  🛑 [引擎1] 半點廣告破口開始於: {timedelta(seconds=int(break_start))} ({break_start:.2f}s) [報時/廣告: {text[:25]}]")
             continue
 
