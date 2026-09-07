@@ -405,13 +405,24 @@ def assemble_cleaned_audio(input_file, cuts, output_file, total_duration):
 
     filter_complex = "".join(filter_parts) + "".join(concat_inputs) + f"concat=n={len(keep_intervals)}:v=0:a=1[outa]"
 
+    # 選擇最佳 AAC 編碼器與碼率：
+    # 優先使用 macOS 原生 Apple AudioToolbox (aac_at)，音質更溫潤自然，消除低碼率人聲乾癟問題；
+    # 碼率設定為 96k，使 75~85 分鐘的去廣告精華時長剛好穩定保持在 50~60 MB 之間。
+    audio_codec = "aac"
+    try:
+        test_cmd = [FFMPEG_BIN, "-v", "quiet", "-f", "lavfi", "-i", "anullsrc", "-c:a", "aac_at", "-t", "0.1", "-f", "null", "-"]
+        if subprocess.run(test_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+            audio_codec = "aac_at"
+    except Exception:
+        pass
+
     cmd = [
         FFMPEG_BIN, "-y",
         "-i", input_file,
         "-filter_complex", filter_complex,
         "-map", "[outa]",
-        "-c:a", "aac",
-        "-b:a", "64k",
+        "-c:a", audio_codec,
+        "-b:a", "96k",
         "-movflags", "+faststart",
         output_file
     ]
