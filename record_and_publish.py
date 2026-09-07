@@ -418,11 +418,15 @@ def main():
         else:
             stream_url, headers_str = get_stream_url(show_cfg["channel"])
 
-        # 2. 錄製音檔至暫存
+        # 2. 錄製音檔至本地原始母帶檔（.raw.m4a，作為永久純淨來源，永不覆蓋）
+        raw_filename = f"{show_cfg['guid_prefix']}{date_str}.raw.m4a"
+        raw_path = os.path.join(temp_dir, raw_filename)
         asset_filename = f"{show_cfg['guid_prefix']}{date_str}.m4a"
         output_path = os.path.join(temp_dir, asset_filename)
 
-        file_size = record_stream(stream_url, duration, output_path, headers_str=headers_str)
+        file_size = record_stream(stream_url, duration, raw_path, headers_str=headers_str)
+        # 預設先複製一份至 output_path 以防跳過去廣告
+        shutil.copy2(raw_path, output_path)
 
     # 2.5 自動切除廣告、新聞、天氣與交通 (預設開啟)
     if not args.skip_remove_ads:
@@ -431,8 +435,9 @@ def main():
             from ad_remover import process_audio_ad_removal, get_audio_duration
             cleaned_filename = f"{show_cfg['guid_prefix']}{date_str}_cleaned.m4a"
             cleaned_output_path = os.path.join(temp_dir, cleaned_filename)
+            input_source = raw_path if 'raw_path' in locals() and os.path.exists(raw_path) else (args.input_file or output_path)
             final_path, is_cleaned, stats = process_audio_ad_removal(
-                output_path,
+                input_source,
                 output_file=cleaned_output_path,
                 model_path=args.whisper_model
             )
