@@ -83,15 +83,17 @@ AD_KEYWORDS = [
     "請瀏覽", "詳情請", "歡迎查詢", "網址", "dot com", ".com", ".hk",
     "用心為您", "伴你同行", "專業之選", "為你守護", "帶給您", "生活更精彩", "未來戰士", "未來展示",
     "設計站", "加規站", "車價", "低利率", "BMW", "B&W", "大廣告", "月餅", "美心",
-    "衝衝衝", "音樂會", "向前座", "繼續衝",
+    "要衝衝衝", "衝出身心健康",
     "AIA", "身心健康", "麥當勞", "Donald M", "麥樂雞", "陌落計", "雞腿包", "Supreme Plus", "每公升", "加碼至",
-    "駕駛學校", "駕駛改進課程", "肯倉", "二三四一一三二二", "公共服務車輛", "追返三分", "沒有三分", "扣分", "扣三分", "Shell", "V Power"
+    "駕駛學校", "駕駛改進課程", "肯倉", "二三四一一三二二", "公共服務車輛", "追返三分", "沒有三分", "扣分", "扣三分", "Shell", "V Power",
+    "譚仔雲南米線", "清爽紅甜香椒伴米線", "中銀香港理財", "城市售票網明日公開發售", "Chester 2", "恒基物業"
 ]
 
 # 7. 節目專屬 Jingle / 主持關鍵字（重點保護，絕不可切！）
 PROGRAM_JINGLE_KEYWORDS = [
     "bad girl", "大過佬", "來大笑代替上路", "完美阿正", "笑爆嘴", "elsie", "alsie", "l.c", "小姐, l.c",
     "你公司最討厭", "最討厭的甚麼", "最討厭的是甚麼", "帶過老", "大過老", "代替上路",
+    "大明星殺手", "即日上映", "大哥, 人生當中", "人生當中", "最悲的事", "戴眼鏡",
     "有人拐住你", "有人gua住你", "有人刮住你", "有人掛住你", "你知道不知道有人",
     "你拍拖嘅時候", "你拍拖的時候", "阿正 你拍拖", "阿鄭,你拍拖", "拍拖的時候最討厭", "拍拖嘅時候最討厭",
     "阿正,你拍拖", "我都冇男朋友", "我也沒有男朋友",
@@ -215,16 +217,23 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
             last_ad_end = t_sec
 
         # 1. 檢查整點新聞破口 (Top-of-the-hour break)
-        is_news_start = ("新聞" in text or "商業電台新聞" in text or "報道新聞" in text)
-        if is_news_start and not in_break:
+        # 嚴格限制：新聞只會出現在整點（50~65 分鐘 / 3000s~3900s，以及節目結尾 110~116 分鐘 / 6600s~6960s）
+        is_in_news_window = (3000.0 <= f_sec <= 3900.0) or (f_sec >= 6600.0)
+        is_news_start = is_in_news_window and ("商業電台新聞" in text or "報道新聞" in text or "現在由" in text or "報導新聞" in text or ("新聞" in text and not any(k in text for k in NEWS_END_KEYWORDS)))
+        is_news_end = is_in_news_window and any(k in text for k in NEWS_END_KEYWORDS)
+
+        if (is_news_start or is_news_end) and not in_break:
             in_break = True
             break_type = "整點新聞破口"
             start_cut = f_sec
-            for p in range(max(0, idx - 6), idx):
+            for p in range(max(0, idx - 80), idx):
+                p_to = time_offset + (segments[p]["offsets"]["to"] / 1000.0 if "offsets" in segments[p] else segments[p].get("end", 0.0))
                 p_text = segments[p].get("text", "")
                 if any(k in p_text for k in TIME_ANNOUNCEMENT_KEYWORDS):
-                    p_to = time_offset + (segments[p]["offsets"]["to"] / 1000.0 if "offsets" in segments[p] else segments[p].get("end", 0.0))
                     start_cut = p_to + 0.2
+                    break
+                elif 3175.0 <= p_to <= 3205.0:
+                    start_cut = p_to + 0.5
                     break
             break_start = start_cut
             print(f"  🛑 [引擎1] 整點新聞破口開始於: {timedelta(seconds=int(break_start))} ({break_start:.2f}s) [觸發: {text[:25]}]")
@@ -233,25 +242,24 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
         # 2. 檢查半點廣告破口 (Half-hour :30 break，需排除逢星期X、由X點至X點等節目宣傳)
         is_schedule = any(w in text for w in ["星期", "逢", "至", "由", "到", "節目", "收聽"])
         is_half_hour = any(k in text for k in HALF_HOUR_KEYWORDS) and not is_schedule
-        if is_half_hour and not in_break:
+        # 破口 #1 彈性窗口（10:30 / 17:30，通常落在 1300s ~ 1650s）：若即使沒報時，但出現開頭廣告台呼，亦自動啟動半點破口
+        is_break1_window = (1300.0 <= f_sec <= 1650.0)
+        is_break1_promo = is_break1_window and any(k in text for k in ["新1秒", "新一秒", "者1秒", "即是903", "世責903", "色測903", "即是九零三", "Chester", "肯倉", "恒基"])
+
+        if (is_half_hour or is_break1_promo) and not in_break:
             in_break = True
             break_type = "半點廣告破口"
-            break_start = t_sec + 0.2
-            print(f"  🛑 [引擎1] 半點廣告破口開始於: {timedelta(seconds=int(break_start))} ({break_start:.2f}s) [報時: {text[:25]}]")
+            break_start = f_sec if is_break1_promo else t_sec + 0.2
+            print(f"  🛑 [引擎1] 半點廣告破口開始於: {timedelta(seconds=int(break_start))} ({break_start:.2f}s) [報時/廣告: {text[:25]}]")
             continue
 
         # 3. 檢查破口是否遇到節目專屬 Jingle / Bumper 重開
         if in_break:
             is_jingle = any(kw.lower() in text.lower() for kw in PROGRAM_JINGLE_KEYWORDS)
-            # 安全機制：若超過 750 秒仍未遇到 Jingle，強制截斷破口
-            if is_jingle or (f_sec - break_start > 750.0):
+            # 安全機制：若超過 900 秒仍未遇到 Jingle，強制截斷破口
+            if is_jingle or (f_sec - break_start > 900.0):
                 in_break = False
-                # 若最後廣告與 Jingle/超時 之間有間隙 (> 8 秒)，對齊至最後廣告結尾以完整保留 Jingle 前奏或搞笑短劇
-                if last_ad_end and break_start < last_ad_end and (f_sec - last_ad_end) > 8.0:
-                    end_cut = last_ad_end + 0.6
-                else:
-                    end_cut = max(break_start + 5.0, f_sec - 1.8)
-
+                end_cut = max(break_start + 5.0, f_sec - 1.5)
                 cuts.append({
                     "start": round(break_start, 2),
                     "end": round(end_cut, 2),
