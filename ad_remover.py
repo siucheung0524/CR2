@@ -58,7 +58,7 @@ PSA_KEYWORDS = [
     "積金局", "民政事務總署", "民政事務處", "廉政公署", "香港國際鐘表展", "貿發局", "展覽會", "免費入場",
     "食安中心", "河土", "河套", "創科", "創新合作區", "禁煙", "控煙", "吸煙", "定額罰款",
     "選舉管理委員會", "選管會", "區議會", "委員會", "諮詢", "2891", "291-1001", "EAC.HK", "抽獎", "遊戲規則", "得獎",
-    "食安中心提提你", "升級有型食屍", "加入升級更有型"
+    "食安中心提提你", "升級有型食屍", "加入升級更有型", "金管局", "防騙"
 ]
 
 # 5. 商台台呼、節目宣傳與熱線
@@ -68,7 +68,8 @@ STATION_PROMOS = [
     "有誰共鳴", "有稅共鳴", "引發你的共鳴", "50881903", "中銀香港理財", "一切從音樂開始",
     "LIFE 音樂會", "LIFE音樂會", "woodie", "woodby", "即刻學堂", "即參學彈",
     "寫一秒", "新一秒", "七九零三", "即七九零三", "色測903", "跑高山", "爬下山", "借一秒", "者1秒",
-    "王先生想你"
+    "王先生想你", "在晴朗的一天出發", "晴朗", "林海峰", "軟紙劫", "阮子健", "道格小島",
+    "Pay for the day", "為你親自打點", "同年的自己"
 ]
 
 # 6. 商業特約廣告詞庫
@@ -83,7 +84,8 @@ AD_KEYWORDS = [
     "用心為您", "伴你同行", "專業之選", "為你守護", "帶給您", "生活更精彩", "未來戰士", "未來展示",
     "設計站", "加規站", "車價", "低利率", "BMW", "B&W", "大廣告", "月餅", "美心",
     "衝衝衝", "音樂會", "向前座", "繼續衝",
-    "AIA", "身心健康", "麥當勞", "Donald M", "麥樂雞", "陌落計", "雞腿包", "Supreme Plus", "每公升", "加碼至"
+    "AIA", "身心健康", "麥當勞", "Donald M", "麥樂雞", "陌落計", "雞腿包", "Supreme Plus", "每公升", "加碼至",
+    "駕駛學校", "駕駛改進課程", "肯倉", "二三四一一三二二", "公共服務車輛", "追返三分", "沒有三分", "扣分", "扣三分", "Shell", "V Power"
 ]
 
 # 7. 節目專屬 Jingle / 主持關鍵字（重點保護，絕不可切！）
@@ -94,7 +96,8 @@ PROGRAM_JINGLE_KEYWORDS = [
     "你拍拖嘅時候", "你拍拖的時候", "阿正 你拍拖", "阿鄭,你拍拖", "拍拖的時候最討厭", "拍拖嘅時候最討厭",
     "阿正,你拍拖", "我都冇男朋友", "我也沒有男朋友",
     "聖艾粒", "lalalala", "少爺占", "當奴", "艾粒",
-    "鼓仔", "聽眾的鼓仔", "分享聽眾", "收到的鼓仔", "你不懂,我懂", "你不懂我懂"
+    "鼓仔", "聽眾的鼓仔", "分享聽眾", "收到的鼓仔", "你不懂,我懂", "你不懂我懂",
+    "sing a lup", "la la la la", "去蛇王", "辣辣辣", "阿佔", "太陽都落山", "未睡得覺", "四個人甘丁爽", "辣辣青絲"
 ]
 
 # 8. 整點與半點報時關鍵字（需精確定位報時與嗶聲）
@@ -177,6 +180,26 @@ def run_whisper_transcription(wav_file, model_path=None, json_base_path=None):
         data = json.load(f)
 
     return data.get("transcription", [])
+
+
+def has_time_announcement_between(segments, t1, t2, time_offset=0.0):
+    """
+    檢查在兩段廣告切除區間之間，是否存在整點或半點報時與嗶聲（避免合併時將報時與嗶聲誤切）
+    """
+    for seg in segments:
+        text = seg.get("text", "").strip()
+        if not text:
+            continue
+        if any(k in text for k in TIME_ANNOUNCEMENT_KEYWORDS):
+            if "offsets" in seg:
+                f_sec = time_offset + seg["offsets"].get("from", 0) / 1000.0
+                t_sec = time_offset + seg["offsets"].get("to", 0) / 1000.0
+            else:
+                f_sec = time_offset + seg.get("start", 0.0)
+                t_sec = time_offset + seg.get("end", 0.0)
+            if (t1 - 2.0) <= f_sec and t_sec <= (t2 + 2.0):
+                return True, f_sec, t_sec
+    return False, None, None
 
 
 def detect_ad_intervals(segments, total_duration, time_offset=0.0):
@@ -345,8 +368,17 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
     for b in ad_blocks:
         dur = b["end"] - b["start"]
         if dur >= 8.0 or len(b["segments"]) >= 2:
-            c_s = 0.0 if b["start"] <= 15.0 else max(0.0, b["start"] - 0.5)
+            c_s = 0.0 if b["start"] <= 50.0 else max(0.0, b["start"] - 0.5)
             c_e = min(total_duration, b["end"] + 0.5)
+            if c_s == 0.0:
+                # 開場緩衝區：若此廣告區塊接近開場 Jingle（35秒內），將切除區間精確延伸至 Jingle 起拍點前
+                for seg in segments:
+                    text = seg.get("text", "").strip()
+                    if any(kw.lower() in text.lower() for kw in PROGRAM_JINGLE_KEYWORDS):
+                        sf = (seg["offsets"]["from"] / 1000.0) if "offsets" in seg else seg.get("start", 0.0)
+                        if sf >= b["end"] and sf - b["end"] <= 35.0:
+                            c_e = round(sf - 0.5, 2)
+                            break
             if c_e > c_s + 3.0:
                 cuts.append({
                     "start": round(c_s, 2),
@@ -363,7 +395,15 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
             merged_cuts.append(c)
         else:
             prev = merged_cuts[-1]
-            if c["start"] <= prev["end"] + 5.0:
+            has_ta, ta_f, ta_t = has_time_announcement_between(segments, prev["end"], c["start"], time_offset=time_offset)
+            if has_ta:
+                # 保護整點/半點報時：不跨越報時進行合併，並將前後切除區間精確對齊至報時邊界
+                prev["end"] = max(prev["start"] + 1.0, min(prev["end"], round(ta_f - 0.4, 2)))
+                prev["duration"] = round(prev["end"] - prev["start"], 2)
+                c["start"] = min(c["end"] - 1.0, max(c["start"], round(ta_t + 0.2, 2)))
+                c["duration"] = round(c["end"] - c["start"], 2)
+                merged_cuts.append(c)
+            elif c["start"] <= prev["end"] + 5.0:
                 prev["end"] = max(prev["end"], c["end"])
                 prev["duration"] = round(prev["end"] - prev["start"], 2)
             else:
