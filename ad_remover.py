@@ -182,26 +182,6 @@ def run_whisper_transcription(wav_file, model_path=None, json_base_path=None):
     return data.get("transcription", [])
 
 
-def has_time_announcement_between(segments, t1, t2, time_offset=0.0):
-    """
-    檢查在兩段廣告切除區間之間，是否存在整點或半點報時與嗶聲（避免合併時將報時與嗶聲誤切）
-    """
-    for seg in segments:
-        text = seg.get("text", "").strip()
-        if not text:
-            continue
-        if any(k in text for k in TIME_ANNOUNCEMENT_KEYWORDS):
-            if "offsets" in seg:
-                f_sec = time_offset + seg["offsets"].get("from", 0) / 1000.0
-                t_sec = time_offset + seg["offsets"].get("to", 0) / 1000.0
-            else:
-                f_sec = time_offset + seg.get("start", 0.0)
-                t_sec = time_offset + seg.get("end", 0.0)
-            if (t1 - 2.0) <= f_sec and t_sec <= (t2 + 2.0):
-                return True, f_sec, t_sec
-    return False, None, None
-
-
 def detect_ad_intervals(segments, total_duration, time_offset=0.0):
     """
     雙引擎廣告、新聞與交通破口偵測器：
@@ -370,15 +350,6 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
         if dur >= 8.0 or len(b["segments"]) >= 2:
             c_s = 0.0 if b["start"] <= 50.0 else max(0.0, b["start"] - 0.5)
             c_e = min(total_duration, b["end"] + 0.5)
-            if c_s == 0.0:
-                # 開場緩衝區：若此廣告區塊接近開場 Jingle（35秒內），將切除區間精確延伸至 Jingle 起拍點前
-                for seg in segments:
-                    text = seg.get("text", "").strip()
-                    if any(kw.lower() in text.lower() for kw in PROGRAM_JINGLE_KEYWORDS):
-                        sf = (seg["offsets"]["from"] / 1000.0) if "offsets" in seg else seg.get("start", 0.0)
-                        if sf >= b["end"] and sf - b["end"] <= 35.0:
-                            c_e = round(sf - 0.5, 2)
-                            break
             if c_e > c_s + 3.0:
                 cuts.append({
                     "start": round(c_s, 2),
@@ -387,7 +358,7 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
                     "sample_text": b["segments"][0]["text"][:30]
                 })
 
-    # 合併與去重所有 cuts
+    # 合併與去重所有 cuts（凡是兩段切除之間的間隔 <= 20.0 秒之非節目碎片，一律合併消除跳切與孤島碎片）
     cuts.sort(key=lambda x: x["start"])
     merged_cuts = []
     for c in cuts:
@@ -395,15 +366,7 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
             merged_cuts.append(c)
         else:
             prev = merged_cuts[-1]
-            has_ta, ta_f, ta_t = has_time_announcement_between(segments, prev["end"], c["start"], time_offset=time_offset)
-            if has_ta:
-                # 保護整點/半點報時：不跨越報時進行合併，並將前後切除區間精確對齊至報時邊界
-                prev["end"] = max(prev["start"] + 1.0, min(prev["end"], round(ta_f - 0.4, 2)))
-                prev["duration"] = round(prev["end"] - prev["start"], 2)
-                c["start"] = min(c["end"] - 1.0, max(c["start"], round(ta_t + 0.2, 2)))
-                c["duration"] = round(c["end"] - c["start"], 2)
-                merged_cuts.append(c)
-            elif c["start"] <= prev["end"] + 5.0:
+            if c["start"] - prev["end"] <= 20.0:
                 prev["end"] = max(prev["end"], c["end"])
                 prev["duration"] = round(prev["end"] - prev["start"], 2)
             else:
