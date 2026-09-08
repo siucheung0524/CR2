@@ -86,7 +86,8 @@ AD_KEYWORDS = [
     "要衝衝衝", "衝出身心健康",
     "AIA", "身心健康", "麥當勞", "Donald M", "麥樂雞", "陌落計", "雞腿包", "Supreme Plus", "每公升", "加碼至",
     "駕駛學校", "駕駛改進課程", "肯倉", "二三四一一三二二", "公共服務車輛", "追返三分", "沒有三分", "扣分", "扣三分", "Shell", "V Power",
-    "中銀香港理財", "城市售票網明日公開發售", "Chester 2", "恒基物業"
+    "中銀香港理財", "城市售票網明日公開發售", "Chester 2", "恒基物業",
+    "高光時刻", "周殷廷", "演唱會", "售票網", "城市售票網", "公開發售", "私隱專員", "私隱學堂", "個人資料", "香港驗車", "驗車公司"
 ]
 
 # 7. 節目專屬 Jingle / 主持關鍵字（重點保護，絕不可切！）
@@ -221,7 +222,7 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
         # 1. 檢查整點新聞破口 (Top-of-the-hour break)
         # 嚴格限制：新聞只會出現在整點（50~65 分鐘 / 3000s~3900s，以及節目結尾 110~116 分鐘 / 6600s~6960s）
         is_in_news_window = (3000.0 <= f_sec <= 3900.0) or (f_sec >= 6600.0)
-        is_news_start = is_in_news_window and ("商業電台新聞" in text or "報道新聞" in text or "現在由" in text or "報導新聞" in text or ("新聞" in text and not any(k in text for k in NEWS_END_KEYWORDS)))
+        is_news_start = is_in_news_window and ("商業電台新聞" in text or "報道新聞" in text or "現在由" in text or "報導新聞" in text or ("新聞" in text and not any(k in text for k in NEWS_END_KEYWORDS)) or (f_sec >= 6780.0 and any(k in text for k in ["12點", "19點", "十二點", "十九點", "驗車", "香港驗車"])))
         is_news_end = is_in_news_window and any(k in text for k in NEWS_END_KEYWORDS)
 
         if (is_news_start or is_news_end) and not in_break:
@@ -244,11 +245,11 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
         # 2. 檢查半點廣告破口 (Half-hour :30 break，需排除逢星期X、由X點至X點等節目宣傳)
         is_schedule = any(w in text for w in ["星期", "逢", "至", "由", "到", "節目", "收聽"])
         is_half_hour = any(k in text for k in HALF_HOUR_KEYWORDS) and not is_schedule
-        # 破口 #1 彈性窗口（10:30 / 17:30，通常落在 1300s ~ 1650s）：若即使沒報時，但出現開頭廣告台呼，亦自動啟動半點破口
+        # 破口 #1 彈性窗口（10:30 / 17:30，通常落在 1300s ~ 1650s）：若即使沒報時，但出現開頭廣告台呼或演唱會/公署廣告，亦自動啟動半點破口
         is_break1_window = (1300.0 <= f_sec <= 1650.0)
-        is_break1_promo = is_break1_window and any(k in text for k in ["新1秒", "新一秒", "者1秒", "即是903", "世責903", "色測903", "即是九零三", "Chester", "肯倉", "恒基"])
-        # 破口 #1B 特約環節結束後中場廣告與宣傳（約落在 2140s ~ 2330s）
-        is_mid_promo = (2140.0 <= f_sec <= 2330.0) and any(k in text for k in ["高光時刻", "高官時刻", "中銀香港", "情情踏踏", "小小事", "思浪"])
+        is_break1_promo = is_break1_window and any(k in text for k in ["新1秒", "新一秒", "者1秒", "即是903", "世責903", "色測903", "即是九零三", "Chester", "肯倉", "恒基", "演唱會", "售票網", "公開發售", "公署", "私隱"])
+        # 破口 #1B 特約環節結束後中場廣告與宣傳（約落在 2140s ~ 2330s 或 6550s ~ 6660s）
+        is_mid_promo = ((2140.0 <= f_sec <= 2330.0) or (6550.0 <= f_sec <= 6660.0)) and any(k in text for k in ["高光時刻", "高官時刻", "中銀香港", "情情踏踏", "小小事", "思浪", "少少的廣告", "一點廣告"])
 
         if (is_half_hour or is_break1_promo or is_mid_promo) and not in_break:
             in_break = True
