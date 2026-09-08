@@ -67,9 +67,9 @@ STATION_PROMOS = [
     "即拆903", "拆903", "即拆 903", "音樂平台", "平台收聽", "即相隔", "即上各大",
     "有誰共鳴", "有稅共鳴", "引發你的共鳴", "50881903", "中銀香港理財", "一切從音樂開始",
     "LIFE 音樂會", "LIFE音樂會", "woodie", "woodby", "即刻學堂", "即參學彈",
-    "寫一秒", "新一秒", "七九零三", "即七九零三", "色測903", "跑高山", "爬下山", "借一秒", "者1秒",
+    "寫一秒", "新一秒", "七九零三", "即七九零三", "色測903", "釋測903", "釋測九零三", "跑高山", "爬下山", "借一秒", "者1秒",
     "王先生想你", "在晴朗的一天出發", "晴朗", "林海峰", "軟紙劫", "阮子健", "道格小島",
-    "Pay for the day", "為你親自打點", "同年的自己"
+    "Pay for the day", "為你親自打點", "同年的自己", "港鐵接軌", "貫通地上地下", "以即時新聞"
 ]
 
 # 6. 商業特約廣告詞庫
@@ -229,15 +229,24 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
             in_break = True
             break_type = "整點新聞破口"
             start_cut = f_sec
-            for p in range(max(0, idx - 80), idx):
-                p_to = time_offset + (segments[p]["offsets"]["to"] / 1000.0 if "offsets" in segments[p] else segments[p].get("end", 0.0))
-                p_text = segments[p].get("text", "")
+            for p in range(idx - 1, max(-1, idx - 80), -1):
+                p_seg = segments[p]
+                p_text = p_seg.get("text", "")
+                p_to = time_offset + (p_seg["offsets"]["to"] / 1000.0 if "offsets" in p_seg else p_seg.get("end", 0.0))
+                p_from = time_offset + (p_seg["offsets"]["from"] / 1000.0 if "offsets" in p_seg else p_seg.get("start", 0.0))
+                prev_to = time_offset + (segments[p-1]["offsets"]["to"] / 1000.0 if "offsets" in segments[p-1] else segments[p-1].get("end", 0.0)) if p > 0 else 0
+
+                # 1. 若整點前有明顯對話空檔 (>8s) 且落在 3080s~3250s 或 6650s~6800s，主持人往往在空檔前已結束對話
+                if (p_from - prev_to > 8.0) and ((3080.0 <= prev_to <= 3250.0) or (6650.0 <= prev_to <= 6800.0)):
+                    start_cut = prev_to + 0.5
+                    break
+                # 2. 報時字眼
                 if any(k in p_text for k in TIME_ANNOUNCEMENT_KEYWORDS):
                     start_cut = p_to + 0.2
                     break
-                elif 3175.0 <= p_to <= 3205.0:
-                    start_cut = p_to + 0.5
-                    break
+                # 3. 廣告或宣傳聲帶
+                if any(k in p_text for k in STATION_PROMOS + AD_KEYWORDS + PSA_KEYWORDS):
+                    start_cut = p_from
             break_start = start_cut
             print(f"  🛑 [引擎1] 整點新聞破口開始於: {timedelta(seconds=int(break_start))} ({break_start:.2f}s) [觸發: {text[:25]}]")
             continue
