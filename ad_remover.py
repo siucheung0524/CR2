@@ -415,7 +415,7 @@ def assemble_cleaned_audio(input_file, cuts, output_file, total_duration):
         filter_parts.append(f"[0:a]atrim=start={ks}:end={ke},asetpts=PTS-STARTPTS[a{idx}];")
         concat_inputs.append(f"[a{idx}]")
 
-    filter_complex = "".join(filter_parts) + "".join(concat_inputs) + f"concat=n={len(keep_intervals)}:v=0:a=1[outa]"
+    filter_complex = "".join(filter_parts) + "".join(concat_inputs) + f"concat=n={len(keep_intervals)}:v=0:a=1[concata];[concata]volume=2.0dB,alimiter=limit=0.98[outa]"
 
     # 選擇最佳 AAC 編碼器與碼率：
     # 優先使用 macOS 原生 Apple AudioToolbox (aac_at)，音質更溫潤自然，消除低碼率人聲乾癟問題；
