@@ -3,11 +3,14 @@
 ad_remover.py - Commercial Radio 2 (叱咤903) 自動廣告、整點新聞、交通與天氣切除模組
 
 技術特點：
-1. 使用 whisper-cli + Apple Silicon Metal GPU 硬體加速進行快速粵語轉錄。
-2. 結合整點新聞狀態機、半點交通消息與商業廣告詞庫進行語意標記。
-3. 支援「保留整點語音報時與嗶一聲（Time Pip）」，緊接切除後續新聞與廣告破口。
-4. 支援節目官方開場 Jingle 精準保護（保留前奏、搞笑短劇與主題曲）。
-5. 雙重安全防護（Fail-safe）：去廣告異常或時長比例不合常理時，自動回退保留原音檔。
+1. 使用 whisper-cli + Apple Silicon Metal GPU 硬體加速進行超快速粵語全集轉錄。
+2. 整合 Google Gemini 3.6 Flash 雲端大模型進行前文後理（上下文）全篇語意深度審查：
+   - 區分主持人隨口閒聊口語（如「贊助」、「轉數快」、「車」）與真實特約廣告。
+   - 保護節目專屬單元（如「黃埔 AI 豪子」、「街仔好人」）。
+   - 保留整點前完整主持人告別語與過場 Jingle。
+3. 內建本機啟發式雙引擎（整點新聞狀態機 + 商業廣告詞庫）作為雙重安全回退（Fail-safe）。
+4. 支援「保留整點語音報時與嗶一聲（Time Pip）」，消除爆音與跳切。
+5. 雙重安全防護機制：若 AI 或規則引擎異常或切除比例不合常理，自動回退保留原音檔。
 """
 
 import os
@@ -17,7 +20,14 @@ import re
 import subprocess
 import shutil
 import time
+import urllib.request
+import ssl
 from datetime import timedelta
+
+try:
+    import certifi
+except ImportError:
+    certifi = None
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FFMPEG_BIN = "/opt/homebrew/bin/ffmpeg" if os.path.exists("/opt/homebrew/bin/ffmpeg") else "ffmpeg"
@@ -411,6 +421,147 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
     return tagged, merged_cuts
 
 
+def get_gemini_api_key():
+    """從環境變數或 .env 檔案中取得 GEMINI_API_KEY"""
+    key = os.environ.get("GEMINI_API_KEY")
+    if key:
+        return key.strip()
+    env_path = os.path.join(SCRIPT_DIR, ".env")
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith("GEMINI_API_KEY="):
+                        val = line.split("=", 1)[1].strip()
+                        if val:
+                            return val
+        except Exception:
+            pass
+    return None
+
+
+def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_code="bgog", api_key=None):
+    """
+    調用 Google Gemini Flash 雲端大模型進行前文後理（上下文）全篇語意理解與去廣告區間劃定。
+    優勢：
+    1. 具備長文本推理與前文後理理解，能精確區分主持人隨口閒聊的口語贊助/廣告詞 vs 真實廣告破口。
+    2. 能依據節目主題（阿正、Elsie、森美 / 少爺占、當奴「黃埔 AI 豪子」）保護所有重要正片單元。
+    3. 自動精準定位各破口起訖點與節目專屬 Jingle。
+    """
+    if not api_key:
+        api_key = get_gemini_api_key()
+    if not api_key:
+        raise ValueError("未提供有效的 GEMINI_API_KEY")
+
+    lines = []
+    for seg in transcript_segments:
+        if "offsets" in seg:
+            t0 = seg["offsets"].get("from", 0) / 1000.0
+        else:
+            t0 = seg.get("start", 0.0)
+        text = seg.get("text", "").strip()
+        if text:
+            m, s = int(t0 // 60), int(t0 % 60)
+            lines.append(f"[{m:02d}:{s:02d} ({t0:.1f}s)] {text}")
+
+    transcript_text = "\n".join(lines)
+
+    if show_code == "ilub":
+        show_info = """目標節目：《聖艾粒LaLaLaLa》（叱咤903，主持：少爺占、當奴）
+節目專屬特點：
+- 節目專屬 Jingle：聖艾粒、lalalala、sing a lup、你不懂我懂、四個人甘丁爽等。
+- 【極度重要防誤殺】：節目中的「黃埔 AI 豪子」以及「聽眾鼓仔」是少爺占與當奴的節目正片固定環節，絕不是商場廣告，必須 100% 完整保留！
+- 主持人日常隨口開玩笑中提及的贊助、廣告、商台活動等屬於節目對話，不可切除！"""
+    else:
+        show_info = """目標節目：《Bad Girl 大過佬》（叱咤903，主持：阿正、Elsie，常有森美、代班主持妹頭 Ransi 等人互動）
+節目專屬特點：
+- 節目專屬 Jingle：大大大大過佬、來大笑代替上路、最後一個 pose... 最後一條 reels、CLS/水樓CLS、街仔好人的時間等。
+- 【極度重要防誤殺】：主持人閒聊中隨口開玩笑或話題中提及的「贊助」、「買車」、「轉數快」、「打電話」完全屬於日常節目口語，絕對不可誤殺！
+- 節目結尾主持人的最後道別（如「下個禮拜再見，拜拜！」）及之前的結論互動（如「寡迪神」好人好事）屬於節目正片，不可提前切斷！"""
+
+    prompt = f"""你是一位專業的香港商台叱咤903廣播節目剪輯專家。你的任務是閱讀以下帶有時間戳的廣播節目完整逐字稿（廣東話），根據【前文後理】識別出哪些是【真正的電台節目正片內容】，哪些是【非節目內容：新聞報道、天氣預測、交通消息、電台台呼/宣傳、商業特約廣告】。
+
+{show_info}
+
+剪輯核心原則：
+1. 【必須保留的正片 (keep_intervals)】：
+   - 主持人之間的所有交談、話題閒聊、聽眾電話互動、金句（例如出發手勢、人生金句）。
+   - 節目專屬 Jingle、開場主題曲、過場 Bumper。
+   - 節目結尾主持人的最後道別（如「下個禮拜再見，拜拜！」）及之前的所有話題。
+2. 【必須切除的非節目破口 (cuts)】：
+   - 節目開播前的天氣預測與商業廣告（直到開場主題曲響起）。
+   - 半點時段的報時與商業廣告群（直到過場 Jingle 響起）。
+   - 整點新聞報道、天氣、商業廣告（直到整點後節目 Jingle 響起）。
+   - 節目結尾主持道別（「下個禮拜再見，拜拜！」）之後的商業廣告與整點新聞。
+
+請仔細閱讀前文後理，輸出【保留正片區間 (keep_intervals)】。
+請嚴格輸出純 JSON 格式，格式如下：
+{{
+  "keep_intervals": [
+    {{"start": 136.0, "end": 1404.0, "description": "Part 1: 開場 Jingle 至 10:30 報時破口"}},
+    {{"start": 1674.0, "end": 3161.0, "description": "Part 2: 10:30 Jingle 至 11:00 整點新聞前"}}
+  ]
+}}
+
+以下是逐字稿：
+{transcript_text}"""
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={api_key}"
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "temperature": 0.1
+        }
+    }
+
+    req_data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
+
+    if certifi:
+        ctx = ssl.create_default_context(cafile=certifi.where())
+    else:
+        ctx = ssl.create_default_context()
+
+    with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=120) as resp:
+        res = json.loads(resp.read().decode("utf-8"))
+        result_text = res["candidates"][0]["content"]["parts"][0]["text"]
+        parsed = json.loads(result_text)
+
+    keep_intervals = parsed.get("keep_intervals", [])
+    if not keep_intervals:
+        raise ValueError("Gemini 未回傳有效的 keep_intervals")
+
+    # 驗證時序合理性並由 keep_intervals 推導 cuts
+    keep_intervals.sort(key=lambda x: float(x["start"]))
+    cuts = []
+    cursor = 0.0
+    for item in keep_intervals:
+        ks = float(item["start"])
+        ke = float(item["end"])
+        desc = item.get("description", "")
+        if ke <= ks:
+            continue
+        if ks > cursor + 1.0:
+            cuts.append({
+                "start": round(cursor, 2),
+                "end": round(ks, 2),
+                "duration": round(ks - cursor, 2),
+                "sample_text": f"AI語意破口 (銜接: {desc[:25]})"
+            })
+        cursor = max(cursor, ke)
+
+    if cursor < total_duration - 1.0:
+        cuts.append({
+            "start": round(cursor, 2),
+            "end": round(total_duration, 2),
+            "duration": round(total_duration - cursor, 2),
+            "sample_text": "AI語意結尾新聞破口"
+        })
+
+    return keep_intervals, cuts
+
+
 def assemble_cleaned_audio(input_file, cuts, output_file, total_duration):
     """根據切除區間，調用 FFmpeg 進行精準無損無縫拼接"""
     if not cuts:
@@ -506,10 +657,37 @@ def process_audio_ad_removal(input_file, output_file=None, model_path=None):
 
         # 3. 廣告/新聞區間語意偵測
         print("\n[步驟 3/4] 正在分析逐字稿並識別廣告、新聞與交通破口...")
-        tagged, cuts = detect_ad_intervals(segments, total_duration)
+        cuts = []
+        used_engine = "heuristic"
+
+        api_key = get_gemini_api_key()
+        filename = os.path.basename(input_file).lower()
+        show_code = "ilub" if "ilub" in filename else "bgog"
+
+        if api_key:
+            try:
+                print(f"🧠 [AI 語意理解] 偵測到 GEMINI_API_KEY，調用 Gemini 3.6 Flash 依上下文（前文後理）分析 {show_code}...")
+                keeps, ai_cuts = detect_ad_intervals_with_gemini(segments, total_duration, show_code=show_code, api_key=api_key)
+                ai_cut_seconds = sum(c["duration"] for c in ai_cuts)
+                ai_ratio = ai_cut_seconds / max(1.0, total_duration)
+                if 120.0 <= ai_cut_seconds and ai_ratio <= 0.45:
+                    cuts = ai_cuts
+                    used_engine = "gemini-3.6-flash"
+                    print(f"✅ Gemini 語意辨識成功！提取出 {len(keeps)} 個節目正片段落，切除時長: {timedelta(seconds=int(ai_cut_seconds))} ({ai_ratio*100:.1f}%)")
+                    for idx, k in enumerate(keeps):
+                        print(f"    正片 #{idx+1}: {timedelta(seconds=int(k['start']))} -> {timedelta(seconds=int(k['end']))} ({k.get('description', '')})")
+                else:
+                    print(f"⚠️ Gemini 切除時長比例異常 ({ai_ratio*100:.1f}%)，切換回本機啟發式規則引擎。")
+            except Exception as e:
+                print(f"⚠️ Gemini 語意分析遇到問題 ({e})，自動安全回退至本機啟發式規則引擎！")
+
+        if not cuts:
+            print("⚙️ 啟動本機啟發式雙引擎（整點新聞狀態機 + 交通商業廣告詞庫）...")
+            tagged, cuts = detect_ad_intervals(segments, total_duration)
+            used_engine = "heuristic"
 
         total_cut_seconds = sum(c["duration"] for c in cuts)
-        print(f"\n📊 偵測結果分析:")
+        print(f"\n📊 偵測結果分析 (採用引擎: {used_engine}):")
         print(f"  總共發現 {len(cuts)} 個非節目廣告/新聞破口")
         print(f"  預計切除總時長: {timedelta(seconds=int(total_cut_seconds))} ({total_cut_seconds:.1f} 秒)")
 
@@ -547,6 +725,7 @@ def process_audio_ad_removal(input_file, output_file=None, model_path=None):
         print(f"{'='*70}\n")
 
         return output_file, True, {
+            "engine": used_engine,
             "total_cuts": len(cuts),
             "cut_seconds": total_cut_seconds,
             "original_duration": total_duration,
