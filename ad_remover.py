@@ -563,9 +563,9 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     else:
         show_info = """目標節目：《Bad Girl 大過佬》（叱咤903，主持：阿正、Elsie，常有森美、代班主持妹頭 Ransi 等人互動）
 節目專屬特點：
-- 節目專屬 Jingle：大大大大過佬、來大笑代替上路、最後一個 pose... 最後一條 reels、CLS/水樓CLS、街仔好人的時間等。
+- 節目專屬 Jingle：大大大大過佬、來大笑代替上路、最後一個 pose... 最後一條 reels、CLS/水樓CLS、雞仔好人（Whisper 或聽作街仔好人）的時間等。
 - 【極度重要防誤殺】：主持人閒聊中隨口開玩笑或話題中提及的「贊助」、「買車」、「轉數快」、「打電話」完全屬於日常節目口語，絕對不可誤殺！
-- 節目結尾主持人的最後道別（如「下個禮拜再見，拜拜！」）及之前的結論互動（如「寡迪神」好人好事）屬於節目正片，不可提前切斷！"""
+- 節目結尾主持人的最後道別（如「下個禮拜再見，拜拜！」）及之前的結論互動（如「雞仔好人」好事）屬於節目正片，不可提前切斷！"""
 
     prompt = f"""你是一位專業的香港商台叱咤903廣播節目剪輯專家。你的任務是閱讀以下帶有時間戳的廣播節目完整逐字稿（廣東話），根據【前文後理】識別出哪些是【真正的電台節目正片內容】，哪些是【非節目內容：新聞報道、天氣預測、交通消息、電台台呼/宣傳、商業特約廣告】。
 
@@ -593,7 +593,7 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     {{"start": 136.0, "end": 1404.0, "description": "Part 1: 開場 Jingle 至 10:30 報時破口"}},
     {{"start": 1674.0, "end": 3045.5, "description": "Part 2: 10:30 Jingle 至 11:00 前主持對話結束（切除後續 AIA 廣告、宣傳與新聞）"}},
     {{"start": 3778.0, "end": 5048.0, "description": "Part 3: 11:00 後 Reels Jingle 至 11:30 廣告前"}},
-    {{"start": 5415.0, "end": 6808.5, "description": "Part 4: 11:30 後「街仔好人」Jingle 至節目完結道別"}}
+    {{"start": 5415.0, "end": 6808.5, "description": "Part 4: 11:30 後「雞仔好人」Jingle 至節目完結道別"}}
   ]
 }}
 
