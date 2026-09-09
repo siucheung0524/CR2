@@ -37,7 +37,8 @@ WHISPER_BIN = "/opt/homebrew/bin/whisper-cli"
 if not os.path.exists(WHISPER_BIN):
     WHISPER_BIN = "/opt/homebrew/bin/whisper-cpp" if os.path.exists("/opt/homebrew/bin/whisper-cpp") else "whisper-cli"
 
-DEFAULT_MODEL = os.path.join(SCRIPT_DIR, "models", "ggml-base.bin")
+LARGE_MODEL = os.path.join(SCRIPT_DIR, "models", "ggml-large-v3-turbo.bin")
+DEFAULT_MODEL = LARGE_MODEL if os.path.exists(LARGE_MODEL) else os.path.join(SCRIPT_DIR, "models", "ggml-base.bin")
 
 # 1. 新聞狀態機關鍵字
 NEWS_START_KEYWORDS = [
@@ -439,15 +440,15 @@ def get_gemini_api_key():
     return None
 
 
-# 候選 Gemini 模型池（包含使用者指定之 Flash 3.8, 3.7, 3.6, 3.5 及 Lite 系列，輪流調用以均衡配額消耗）
+# 候選 Gemini 模型池（包含使用者指定之 Flash 3.8, 3.7, 3.6, 3.5 旗艦系列，輪流調用以均衡配額消耗，Lite 作為後備容錯）
 DEFAULT_GEMINI_MODELS = [
     "gemini-3.8-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
+    "gemini-3-flash-preview",
     "gemini-3.5-flash-lite",
-    "gemini-3.1-flash-lite",
-    "gemini-3-flash-preview"
+    "gemini-3.1-flash-lite"
 ]
 GEMINI_STATE_FILE = os.path.join(SCRIPT_DIR, ".gemini_model_state.json")
 
@@ -574,6 +575,7 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
 1. 【必須保留的正片 (keep_intervals)】：
    - 主持人之間的所有交談、話題閒聊、聽眾電話互動、金句（例如出發手勢、人生金句）。
    - 節目專屬 Jingle、開場主題曲、過場 Bumper。
+   - 【流行歌曲與音樂】：節目中播放的流行歌曲（主持人在話題之間播歌，例如「聽隻歌返嚟再講」）屬於電台節目正片內容，【絕對不可切除】！必須與前後對話連貫保留！
    - 節目結尾主持人的最後道別（如「下個禮拜再見，拜拜！」）及之前的所有話題。
 2. 【必須切除的非節目破口 (cuts)】：
    - 節目開播前的天氣預測與商業廣告（直到開場主題曲響起）。
