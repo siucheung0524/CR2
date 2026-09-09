@@ -440,13 +440,101 @@ def get_gemini_api_key():
     return None
 
 
-def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_code="bgog", api_key=None):
+# 候選 Gemini 模型池（包含使用者指定之 Flash 3.8, 3.7, 3.6, 3.5 及 Lite 系列，輪流調用以均衡配額消耗）
+DEFAULT_GEMINI_MODELS = [
+    "gemini-3.8-flash",
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-3-flash-preview"
+]
+GEMINI_STATE_FILE = os.path.join(SCRIPT_DIR, ".gemini_model_state.json")
+
+
+def get_gemini_model_candidates():
+    """取得模型池列表，支援從環境變數 GEMINI_MODELS 覆寫"""
+    env_models = os.environ.get("GEMINI_MODELS")
+    if env_models:
+        return [m.strip() for m in env_models.split(",") if m.strip()]
+    return list(DEFAULT_GEMINI_MODELS)
+
+
+def get_next_gemini_models_sequence():
+    """
+    實施持久化輪流輪替（Round-Robin）：
+    根據 .gemini_model_state.json 記錄的上次使用模型索引，
+    計算本次優先使用的模型，並返回完整的候選順序列表，
+    保證每次調用輪換模型，均衡分配 API Quota 用量。
+    """
+    models = get_gemini_model_candidates()
+    last_idx = -1
+    state = {}
+    if os.path.exists(GEMINI_STATE_FILE):
+        try:
+            with open(GEMINI_STATE_FILE, "r", encoding="utf-8") as f:
+                state = json.load(f)
+                last_idx = state.get("last_index", -1)
+        except Exception:
+            state = {}
+
+    start_idx = (last_idx + 1) % len(models)
+    ordered_sequence = models[start_idx:] + models[:start_idx]
+    return ordered_sequence, start_idx, state
+
+
+def record_gemini_model_success(model_name, model_index):
+    """記錄本次成功使用的模型至持久化狀態檔"""
+    try:
+        state = {}
+        if os.path.exists(GEMINI_STATE_FILE):
+            try:
+                with open(GEMINI_STATE_FILE, "r", encoding="utf-8") as f:
+                    state = json.load(f)
+            except Exception:
+                state = {}
+        state["last_used_model"] = model_name
+        state["last_index"] = model_index
+        state["last_success_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        stats = state.setdefault("stats", {})
+        m_stat = stats.setdefault(model_name, {"success": 0, "errors": 0})
+        m_stat["success"] += 1
+        with open(GEMINI_STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"⚠️ 無法寫入 Gemini 狀態檔案: {e}")
+
+
+def record_gemini_model_error(model_name, err_msg):
+    """記錄模型調用錯誤統計"""
+    try:
+        state = {}
+        if os.path.exists(GEMINI_STATE_FILE):
+            try:
+                with open(GEMINI_STATE_FILE, "r", encoding="utf-8") as f:
+                    state = json.load(f)
+            except Exception:
+                state = {}
+        stats = state.setdefault("stats", {})
+        m_stat = stats.setdefault(model_name, {"success": 0, "errors": 0})
+        m_stat["errors"] += 1
+        m_stat["last_error"] = str(err_msg)[:150]
+        with open(GEMINI_STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_code="bgog", api_key=None, model=None):
     """
     調用 Google Gemini Flash 雲端大模型進行前文後理（上下文）全篇語意理解與去廣告區間劃定。
+    支援多模型輪流使用（Round-Robin）與自動容錯轉移（Multi-Model Sequential Failover）。
     優勢：
-    1. 具備長文本推理與前文後理理解，能精確區分主持人隨口閒聊的口語贊助/廣告詞 vs 真實廣告破口。
-    2. 能依據節目主題（阿正、Elsie、森美 / 少爺占、當奴「黃埔 AI 豪子」）保護所有重要正片單元。
-    3. 自動精準定位各破口起訖點與節目專屬 Jingle。
+    1. 輪流調用 Gemini 3.8 Flash, 3.7 Flash, 3.6 Flash, 3.5 Flash 及 Lite 系列，分攤並最大化各模型 Quota。
+    2. 遇到配額耗盡（429）或臨時不可用（503）時，自動依序嘗試下一款模型。
+    3. 具備長文本推理與前文後理理解，能精確區分主持人隨口閒聊的口語贊助/廣告詞 vs 真實廣告破口。
+    4. 依據節目主題保護《Bad Girl 大過佬》Reels Jingle/街仔好人 與《聖艾粒》黃埔 AI 豪子/聽眾鼓仔。
     """
     if not api_key:
         api_key = get_gemini_api_key()
@@ -506,7 +594,6 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
 以下是逐字稿：
 {transcript_text}"""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={api_key}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
@@ -516,21 +603,54 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     }
 
     req_data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
 
     if certifi:
         ctx = ssl.create_default_context(cafile=certifi.where())
     else:
         ctx = ssl.create_default_context()
 
-    with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=120) as resp:
-        res = json.loads(resp.read().decode("utf-8"))
-        result_text = res["candidates"][0]["content"]["parts"][0]["text"]
-        parsed = json.loads(result_text)
+    if model:
+        model_queue = [model]
+    else:
+        model_queue, _, _ = get_next_gemini_models_sequence()
+
+    all_models_list = get_gemini_model_candidates()
+    last_error = None
+    successful_model = None
+    parsed = None
+
+    for idx, cand_model in enumerate(model_queue):
+        print(f"  🤖 嘗試調用 Gemini 模型 [{cand_model}] (輪替順位 {idx+1}/{len(model_queue)})...")
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={api_key}"
+        req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=120) as resp:
+                res = json.loads(resp.read().decode("utf-8"))
+                result_text = res["candidates"][0]["content"]["parts"][0]["text"]
+                parsed = json.loads(result_text)
+
+            keep_intervals = parsed.get("keep_intervals", [])
+            if not keep_intervals:
+                raise ValueError(f"模型 {cand_model} 未回傳有效的 keep_intervals")
+
+            successful_model = cand_model
+            # 記錄成功模型與索引
+            if cand_model in all_models_list:
+                model_idx = all_models_list.index(cand_model)
+                record_gemini_model_success(cand_model, model_idx)
+
+            print(f"  ✨ 模型 [{cand_model}] 分析成功！")
+            break
+
+        except Exception as e:
+            last_error = e
+            record_gemini_model_error(cand_model, e)
+            print(f"  ⚠️ 模型 [{cand_model}] 調用失敗: {e}，自動嘗試下一個候選模型...")
+
+    if not successful_model or not parsed:
+        raise RuntimeError(f"所有候選 Gemini 模型均調用失敗，最後錯誤: {last_error}")
 
     keep_intervals = parsed.get("keep_intervals", [])
-    if not keep_intervals:
-        raise ValueError("Gemini 未回傳有效的 keep_intervals")
 
     # 驗證時序合理性並由 keep_intervals 推導 cuts
     keep_intervals.sort(key=lambda x: float(x["start"]))
@@ -559,7 +679,7 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
             "sample_text": "AI語意結尾新聞破口"
         })
 
-    return keep_intervals, cuts
+    return keep_intervals, cuts, successful_model
 
 
 def assemble_cleaned_audio(input_file, cuts, output_file, total_duration):
@@ -666,18 +786,18 @@ def process_audio_ad_removal(input_file, output_file=None, model_path=None):
 
         if api_key:
             try:
-                print(f"🧠 [AI 語意理解] 偵測到 GEMINI_API_KEY，調用 Gemini 3.6 Flash 依上下文（前文後理）分析 {show_code}...")
-                keeps, ai_cuts = detect_ad_intervals_with_gemini(segments, total_duration, show_code=show_code, api_key=api_key)
+                print(f"🧠 [AI 語意理解] 偵測到 GEMINI_API_KEY，啟用 Gemini 模型池輪流輪替分析 {show_code}...")
+                keeps, ai_cuts, used_model = detect_ad_intervals_with_gemini(segments, total_duration, show_code=show_code, api_key=api_key)
                 ai_cut_seconds = sum(c["duration"] for c in ai_cuts)
                 ai_ratio = ai_cut_seconds / max(1.0, total_duration)
                 if 120.0 <= ai_cut_seconds and ai_ratio <= 0.45:
                     cuts = ai_cuts
-                    used_engine = "gemini-3.6-flash"
-                    print(f"✅ Gemini 語意辨識成功！提取出 {len(keeps)} 個節目正片段落，切除時長: {timedelta(seconds=int(ai_cut_seconds))} ({ai_ratio*100:.1f}%)")
+                    used_engine = f"gemini ({used_model})"
+                    print(f"✅ Gemini [{used_model}] 語意辨識成功！提取出 {len(keeps)} 個節目正片段落，切除時長: {timedelta(seconds=int(ai_cut_seconds))} ({ai_ratio*100:.1f}%)")
                     for idx, k in enumerate(keeps):
                         print(f"    正片 #{idx+1}: {timedelta(seconds=int(k['start']))} -> {timedelta(seconds=int(k['end']))} ({k.get('description', '')})")
                 else:
-                    print(f"⚠️ Gemini 切除時長比例異常 ({ai_ratio*100:.1f}%)，切換回本機啟發式規則引擎。")
+                    print(f"⚠️ Gemini [{used_model}] 切除時長比例異常 ({ai_ratio*100:.1f}%)，切換回本機啟發式規則引擎。")
             except Exception as e:
                 print(f"⚠️ Gemini 語意分析遇到問題 ({e})，自動安全回退至本機啟發式規則引擎！")
 

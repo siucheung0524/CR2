@@ -9,4 +9,4 @@ __pycache__/
 *.log
 recordings/
 .DS_Store
-
+.gemini_model_state.json
