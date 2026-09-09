@@ -94,10 +94,11 @@ AD_KEYWORDS = [
     "用心為您", "伴你同行", "專業之選", "為你守護", "帶給您", "生活更精彩", "未來戰士", "未來展示",
     "設計站", "加規站", "車價", "低利率", "BMW", "B&W", "大廣告", "月餅", "美心",
     "要衝衝衝", "衝出身心健康",
-    "AIA", "身心健康", "麥當勞", "Donald M", "麥樂雞", "陌落計", "雞腿包", "Supreme Plus", "每公升", "加碼至",
+    "AIA", "AIA+", "健康生活節", "身心健康", "麥當勞", "Donald M", "麥樂雞", "陌落計", "雞腿包", "Supreme Plus", "每公升", "加碼至",
     "駕駛學校", "駕駛改進課程", "肯倉", "二三四一一三二二", "公共服務車輛", "追返三分", "沒有三分", "扣分", "扣三分", "Shell", "V Power",
     "中銀香港理財", "城市售票網明日公開發售", "Chester 2", "恒基物業",
     "高光時刻", "周殷廷", "演唱會", "售票網", "城市售票網", "公開發售", "私隱專員", "私隱學堂", "個人資料", "香港驗車", "驗車公司",
+    "全新單曲", "各大音樂平台", "美斯", "告別信",
     "譚仔", "米線", "譚仔雲南米線", "髮再生", "發在身", "護髮專家", "兒童癌病基金", "捐出5元", "專鎖快", "跨境付款"
 ]
 
@@ -260,16 +261,14 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
                     p_from = time_offset + (p_seg["offsets"]["from"] / 1000.0 if "offsets" in p_seg else p_seg.get("start", 0.0))
                     prev_to = time_offset + (segments[p-1]["offsets"]["to"] / 1000.0 if "offsets" in segments[p-1] else segments[p-1].get("end", 0.0)) if p > 0 else 0
 
-                    # 1. 若整點前有明顯對話空檔 (>8s) 且落在 3080s~3250s，主持人往往在空檔前已結束對話
-                    if (p_from - prev_to > 8.0) and (3080.0 <= prev_to <= 3250.0):
+                    # 1. 若整點前有明顯對話空檔 (>3s) 且落在 2980s~3250s，主持人往往在空檔前已結束對話
+                    if (p_from - prev_to > 3.0) and (2980.0 <= prev_to <= 3250.0):
                         start_cut = prev_to + 0.5
-                        break
                     # 2. 報時字眼
-                    if any(k in p_text for k in TIME_ANNOUNCEMENT_KEYWORDS):
+                    elif any(k in p_text for k in TIME_ANNOUNCEMENT_KEYWORDS):
                         start_cut = p_to + 0.2
-                        break
                     # 3. 廣告或宣傳聲帶
-                    if any(k in p_text for k in STATION_PROMOS + AD_KEYWORDS + PSA_KEYWORDS):
+                    elif any(k in p_text for k in STATION_PROMOS + AD_KEYWORDS + PSA_KEYWORDS):
                         start_cut = p_from
             break_start = start_cut
             print(f"  🛑 [引擎1] 整點新聞破口開始於: {timedelta(seconds=int(break_start))} ({break_start:.2f}s) [觸發: {text[:25]}]")
@@ -578,8 +577,11 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
    - 節目結尾主持人的最後道別（如「下個禮拜再見，拜拜！」）及之前的所有話題。
 2. 【必須切除的非節目破口 (cuts)】：
    - 節目開播前的天氣預測與商業廣告（直到開場主題曲響起）。
-   - 半點時段的報時與商業廣告群（直到過場 Jingle 響起）。
-   - 整點新聞報道、天氣、商業廣告（直到整點後節目 Jingle 響起）。
+   - 半點時段（:30）的商業廣告群與報時（直到過場 Jingle 響起）。
+   - 【特別注意整點破口（:00）】：
+     主持人通常在整點前 8~10 分鐘（約 2980s~3050s）便已結束上一段話題對話！
+     話題結束後播放的商業廣告（如 AIA、健康生活節、保險、演唱會、歌手新單曲、特約短片、電台台呼宣傳片）以及隨後的整點新聞、天氣預測，全部都屬於破口！
+     Part 2 必須在主持人話題結束點（約 3045s）立即結束切斷，絕不可將新聞前的商業廣告留入正片！
    - 節目結尾主持道別（「下個禮拜再見，拜拜！」）之後的商業廣告與整點新聞。
 
 請仔細閱讀前文後理，輸出【保留正片區間 (keep_intervals)】。
@@ -587,7 +589,9 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
 {{
   "keep_intervals": [
     {{"start": 136.0, "end": 1404.0, "description": "Part 1: 開場 Jingle 至 10:30 報時破口"}},
-    {{"start": 1674.0, "end": 3161.0, "description": "Part 2: 10:30 Jingle 至 11:00 整點新聞前"}}
+    {{"start": 1674.0, "end": 3045.5, "description": "Part 2: 10:30 Jingle 至 11:00 前主持對話結束（切除後續 AIA 廣告、宣傳與新聞）"}},
+    {{"start": 3778.0, "end": 5048.0, "description": "Part 3: 11:00 後 Reels Jingle 至 11:30 廣告前"}},
+    {{"start": 5415.0, "end": 6808.5, "description": "Part 4: 11:30 後「街仔好人」Jingle 至節目完結道別"}}
   ]
 }}
 
