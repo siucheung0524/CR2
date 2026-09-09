@@ -526,7 +526,7 @@ def record_gemini_model_error(model_name, err_msg):
         pass
 
 
-def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_code="bgog", api_key=None, model=None):
+def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_code="bgog", api_key=None, model=None, date_str=None):
     """
     調用 Google Gemini Flash 雲端大模型進行前文後理（上下文）全篇語意理解與去廣告區間劃定。
     支援多模型輪流使用（Round-Robin）與自動容錯轉移（Multi-Model Sequential Failover）。
@@ -534,7 +534,7 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     1. 輪流調用 Gemini 3.8 Flash, 3.7 Flash, 3.6 Flash, 3.5 Flash 及 Lite 系列，分攤並最大化各模型 Quota。
     2. 遇到配額耗盡（429）或臨時不可用（503）時，自動依序嘗試下一款模型。
     3. 具備長文本推理與前文後理理解，能精確區分主持人隨口閒聊的口語贊助/廣告詞 vs 真實廣告破口。
-    4. 依據節目主題保護《Bad Girl 大過佬》Reels Jingle/街仔好人 與《聖艾粒》黃埔 AI 豪子/聽眾鼓仔。
+    4. 依據節目主題保護《Bad Girl 大過佬》每週各單元與《聖艾粒》黃埔 AI 豪子/聽眾鼓仔。
     """
     if not api_key:
         api_key = get_gemini_api_key()
@@ -554,18 +554,51 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
 
     transcript_text = "\n".join(lines)
 
+    weekdays_cn = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+    weekday_hint = ""
+    if date_str:
+        try:
+            clean_d = re.sub(r'[^0-9]', '', str(date_str))
+            if len(clean_d) >= 8:
+                dt = datetime.strptime(clean_d[:8], "%Y%m%d")
+                weekday_name = weekdays_cn[dt.weekday()]
+                weekday_hint = f"【本集錄音播出日期】：{dt.strftime('%Y-%m-%d')}（{weekday_name}）\n請特別比對今日（{weekday_name}）對應的節目特色與單元環節！\n"
+        except Exception:
+            pass
+
     if show_code == "ilub":
-        show_info = """目標節目：《聖艾粒LaLaLaLa》（叱咤903，主持：少爺占、當奴）
+        show_info = f"""{weekday_hint}目標節目：《聖艾粒LaLaLaLa》（叱咤903，主持：少爺占、當奴）
 節目專屬特點：
 - 節目專屬 Jingle：聖艾粒、lalalala、sing a lup、你不懂我懂、四個人甘丁爽等。
 - 【極度重要防誤殺】：節目中的「黃埔 AI 豪子」以及「聽眾鼓仔」是少爺占與當奴的節目正片固定環節，絕不是商場廣告，必須 100% 完整保留！
 - 主持人日常隨口開玩笑中提及的贊助、廣告、商台活動等屬於節目對話，不可切除！"""
     else:
-        show_info = """目標節目：《Bad Girl 大過佬》（叱咤903，主持：阿正、Elsie，常有森美、代班主持妹頭 Ransi 等人互動）
-節目專屬特點：
-- 節目專屬 Jingle：大大大大過佬、來大笑代替上路、最後一個 pose... 最後一條 reels、CLS/水樓CLS、雞仔好人（Whisper 或聽作街仔好人）的時間等。
-- 【極度重要防誤殺】：主持人閒聊中隨口開玩笑或話題中提及的「贊助」、「買車」、「轉數快」、「打電話」完全屬於日常節目口語，絕對不可誤殺！
-- 節目結尾主持人的最後道別（如「下個禮拜再見，拜拜！」）及之前的結論互動（如「雞仔好人」好事）屬於節目正片，不可提前切斷！"""
+        show_info = f"""{weekday_hint}目標節目：《Bad Girl 大過佬》（叱咤903，主持：森美、阿正、Elsie，常有代班主持如妹頭 Ransi 等人互動）
+【節目每週固定環節日程表（10:00 - 12:00）】：
+◆ 第一小時（10:00 - 11:00）環節：
+  - 星期一【吹水未夠班】：每次有一個主題。主持會分到要分享該件事的程度（由小一至小六其一）。主持分享後大家互猜每位主持的程度。
+  - 星期三【今日手機碌多咗】：每位主持會分享他們在手機找到的「廢post」（Reels、IG post、Threads等），然後由每位主持評價「廢」與否。
+  - 星期四【十句講曬】：每次會由 AI 生成一個十個句子的故事，主持輪流猜是哪十句。
+
+◆ 第二小時（11:00 - 12:00）環節：
+  - 星期一【大明星殺手】：每期邀請一位明星嘉賓參與訪談與互動遊戲「射爆九宮格」——收集嘉賓近期於社交媒體發布的九張相片，由三位主持通過觀察與分析，猜嘉賓本人最偏愛其中的哪一張。
+  - 星期二【衰佬CLS】：
+    * 第一部分：主持人 Elsie 提供一個兩性關係矛盾案例作為討論。
+    * 第二部分：接聽由聽眾所提供的親身經歷電話，廣大聽眾可以在節目社交媒體上進行投票投訴是否成立。主持人將探討兩性關係應如何採取適合措施予以回應或彌補。
+  - 星期三【雞仔好人】：邀請聽眾來電介紹自己做過的好事，可以是生活中的微小好事。
+  - 星期四【Everyday is 新day】：每期主持介紹新事物，及邀請聽眾來電介紹新事物。
+  - 星期五【你知道唔知道有人掛住你】：接聽聽眾來電，向伴侶或心儀對象傳遞平日難以言表的情感。
+
+【節目專屬 Jingle 聲帶】：
+- 「大大大大大大過佬」、「來大笑代替上路」
+- 「最後一個 pose... 最後一條 reels」（下半場開場 Jingle）
+- 「衰佬CLS」、「雞仔好人」（Whisper 有時可能辨識為「街仔好人」）
+
+【極度重要防誤殺原則】：
+1. 嘉賓訪談與聽眾電話：上述所有環節（如星期二衰佬投訴、星期三雞仔好人、星期四新事物、星期五電話告白，以及嘉賓訪談）包含大量聽眾電話連線與嘉賓對話，【100% 屬於節目正片】，絕對不可誤判為廣告！
+2. 兩性話題與個案投票：【衰佬CLS】提及的案例、聽眾抱怨、投票等皆為節目內容，絕非客訴投訴或商業廣告！
+3. 主持人口頭語：主持人日常隨口開玩笑或話題中提及的「買車」、「保險」、「贊助」、「轉數快」、「IG」完全屬於節目口語對話，切勿截斷！
+4. 節目結尾主持人的最後道別（如「下個禮拜再見，拜拜！」）及之前的聽眾互動（如「雞仔好人」好事）屬於節目正片，不可提前切斷！"""
 
     prompt = f"""你是一位專業的香港商台叱咤903廣播節目剪輯專家。你的任務是閱讀以下帶有時間戳的廣播節目完整逐字稿（廣東話），根據【前文後理】識別出哪些是【真正的電台節目正片內容】，哪些是【非節目內容：新聞報道、天氣預測、交通消息、電台台呼/宣傳、商業特約廣告】。
 
@@ -789,11 +822,14 @@ def process_audio_ad_removal(input_file, output_file=None, model_path=None):
         api_key = get_gemini_api_key()
         filename = os.path.basename(input_file).lower()
         show_code = "ilub" if "ilub" in filename else "bgog"
+        date_match = re.search(r'(\d{4})[-_]?(\d{2})[-_]?(\d{2})', filename)
+        date_str = f"{date_match.group(1)}{date_match.group(2)}{date_match.group(3)}" if date_match else None
 
         if api_key:
             try:
-                print(f"🧠 [AI 語意理解] 偵測到 GEMINI_API_KEY，啟用 Gemini 模型池輪流輪替分析 {show_code}...")
-                keeps, ai_cuts, used_model = detect_ad_intervals_with_gemini(segments, total_duration, show_code=show_code, api_key=api_key)
+                date_label = f", 日期: {date_str}" if date_str else ""
+                print(f"🧠 [AI 語意理解] 偵測到 GEMINI_API_KEY，啟用 Gemini 模型池輪流輪替分析 {show_code}{date_label}...")
+                keeps, ai_cuts, used_model = detect_ad_intervals_with_gemini(segments, total_duration, show_code=show_code, api_key=api_key, date_str=date_str)
                 ai_cut_seconds = sum(c["duration"] for c in ai_cuts)
                 ai_ratio = ai_cut_seconds / max(1.0, total_duration)
                 if 120.0 <= ai_cut_seconds and ai_ratio <= 0.45:
