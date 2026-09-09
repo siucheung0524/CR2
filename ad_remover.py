@@ -75,7 +75,7 @@ STATION_PROMOS = [
 # 6. 商業特約廣告詞庫
 AD_KEYWORDS = [
     "查詢", "詳情", "致電", "熱線", "登記", "立即致電", "優惠", "折扣", "送完即止",
-    "條款及細則", "受條款及細則約束", "贊助", "冠名贊助", "特約贊助", "全力贊助", "特約",
+    "條款及細則", "受條款及細則約束", "冠名贊助", "特約贊助", "全力贊助", "贊助播出", "節目贊助", "鳴謝贊助",
     "限時優惠", "現正發售", "門票現正", "公開發售", "快達票", "城網", "撲飛",
     "免費體驗", "立即登記", "電話查詢", "歡迎致電", "借定唔借", "還得到先好借",
     "儲蓄保險", "人壽保險", "定期存款", "年利率", "信用卡", "現金回贈",
@@ -88,16 +88,18 @@ AD_KEYWORDS = [
     "駕駛學校", "駕駛改進課程", "肯倉", "二三四一一三二二", "公共服務車輛", "追返三分", "沒有三分", "扣分", "扣三分", "Shell", "V Power",
     "中銀香港理財", "城市售票網明日公開發售", "Chester 2", "恒基物業",
     "高光時刻", "周殷廷", "演唱會", "售票網", "城市售票網", "公開發售", "私隱專員", "私隱學堂", "個人資料", "香港驗車", "驗車公司",
-    "譚仔", "米線", "譚仔雲南米線", "髮再生", "發在身", "護髮專家", "兒童癌病基金", "捐出5元", "轉數快", "專鎖快", "跨境付款"
+    "譚仔", "米線", "譚仔雲南米線", "髮再生", "發在身", "護髮專家", "兒童癌病基金", "捐出5元", "專鎖快", "跨境付款"
 ]
 
 # 7. 節目專屬 Jingle / 主持關鍵字（重點保護，絕不可切！）
 PROGRAM_JINGLE_KEYWORDS = [
     "bad girl", "大過佬", "來大笑代替上路", "完美阿正", "笑爆嘴", "elsie", "alsie", "l.c", "小姐, l.c",
     "你公司最討厭", "最討厭的甚麼", "最討厭的是甚麼", "帶過老", "大過老", "代替上路",
-    "大明星殺手", "即日上映", "大哥, 人生當中", "人生當中", "最悲的事", "戴眼鏡",
+    "大明星殺手", "即日上映", "大哥, 人生當中", "人生當中", "最悲的事", "最悲嘅事", "最悲", "早點睡吧", "戴眼鏡",
     "能力測試", "探職員", "不要叫我大哥", "叫我怕你",
     "cls", "CLS", "水樓cls", "客席嘉賓", "客戚嘉賓",
+    "最後一個pose", "最後一個姿勢", "say with me", "最後一條reels", "最後一條", "睇完呢個一定係", "睇完呢個", "reels", "reelser", "最後一個", "出發手勢",
+    "街仔好人", "街仔", "好人嘅時間", "好人的時間",
     "有人拐住你", "有人gua住你", "有人刮住你", "有人掛住你", "你知道不知道有人",
     "你拍拖嘅時候", "你拍拖的時候", "阿正 你拍拖", "阿鄭,你拍拖", "拍拖的時候最討厭", "拍拖嘅時候最討厭",
     "阿正,你拍拖", "我都冇男朋友", "我也沒有男朋友",
@@ -231,24 +233,34 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
             in_break = True
             break_type = "整點新聞破口"
             start_cut = f_sec
-            for p in range(idx - 1, max(-1, idx - 80), -1):
-                p_seg = segments[p]
-                p_text = p_seg.get("text", "")
-                p_to = time_offset + (p_seg["offsets"]["to"] / 1000.0 if "offsets" in p_seg else p_seg.get("end", 0.0))
-                p_from = time_offset + (p_seg["offsets"]["from"] / 1000.0 if "offsets" in p_seg else p_seg.get("start", 0.0))
-                prev_to = time_offset + (segments[p-1]["offsets"]["to"] / 1000.0 if "offsets" in segments[p-1] else segments[p-1].get("end", 0.0)) if p > 0 else 0
+            if f_sec >= 6700.0:
+                # 節目結尾：尋找最後的主持人告別語（如「拜拜」、「下個禮拜再見」、「下星期見」、「聽日見」），切口精準落在告別語之後
+                for p in range(idx - 1, max(-1, idx - 80), -1):
+                    p_seg = segments[p]
+                    p_text = p_seg.get("text", "")
+                    p_to = time_offset + (p_seg["offsets"]["to"] / 1000.0 if "offsets" in p_seg else p_seg.get("end", 0.0))
+                    if any(w in p_text for w in ["拜拜", "再見", "下個禮拜", "下星期", "聽日見", "明日見", "明天見"]):
+                        start_cut = p_to + 0.5
+                        break
+            else:
+                for p in range(idx - 1, max(-1, idx - 80), -1):
+                    p_seg = segments[p]
+                    p_text = p_seg.get("text", "")
+                    p_to = time_offset + (p_seg["offsets"]["to"] / 1000.0 if "offsets" in p_seg else p_seg.get("end", 0.0))
+                    p_from = time_offset + (p_seg["offsets"]["from"] / 1000.0 if "offsets" in p_seg else p_seg.get("start", 0.0))
+                    prev_to = time_offset + (segments[p-1]["offsets"]["to"] / 1000.0 if "offsets" in segments[p-1] else segments[p-1].get("end", 0.0)) if p > 0 else 0
 
-                # 1. 若整點前有明顯對話空檔 (>8s) 且落在 3080s~3250s 或 6650s~6800s，主持人往往在空檔前已結束對話
-                if (p_from - prev_to > 8.0) and ((3080.0 <= prev_to <= 3250.0) or (6650.0 <= prev_to <= 6800.0)):
-                    start_cut = prev_to + 0.5
-                    break
-                # 2. 報時字眼
-                if any(k in p_text for k in TIME_ANNOUNCEMENT_KEYWORDS):
-                    start_cut = p_to + 0.2
-                    break
-                # 3. 廣告或宣傳聲帶
-                if any(k in p_text for k in STATION_PROMOS + AD_KEYWORDS + PSA_KEYWORDS):
-                    start_cut = p_from
+                    # 1. 若整點前有明顯對話空檔 (>8s) 且落在 3080s~3250s，主持人往往在空檔前已結束對話
+                    if (p_from - prev_to > 8.0) and (3080.0 <= prev_to <= 3250.0):
+                        start_cut = prev_to + 0.5
+                        break
+                    # 2. 報時字眼
+                    if any(k in p_text for k in TIME_ANNOUNCEMENT_KEYWORDS):
+                        start_cut = p_to + 0.2
+                        break
+                    # 3. 廣告或宣傳聲帶
+                    if any(k in p_text for k in STATION_PROMOS + AD_KEYWORDS + PSA_KEYWORDS):
+                        start_cut = p_from
             break_start = start_cut
             print(f"  🛑 [引擎1] 整點新聞破口開始於: {timedelta(seconds=int(break_start))} ({break_start:.2f}s) [觸發: {text[:25]}]")
             continue
