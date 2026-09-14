@@ -21,6 +21,13 @@ def fetch_html_via_proxy(url):
     except:
         return ""
 
+def has_github_release(date_str):
+    try:
+        r = requests.get(f"https://api.github.com/repos/siucheung0524/CR2/releases/tags/bgog-{date_str}", timeout=5)
+        return r.status_code == 200
+    except:
+        return False
+
 def check_and_update():
     hk_tz = timezone(timedelta(hours=8))
     now_hk = datetime.now(hk_tz)
@@ -30,7 +37,7 @@ def check_and_update():
         target_date = now_hk - timedelta(days=i)
         date_str = target_date.strftime("%Y%m%d")
         if target_date.weekday() >= 5: continue
-        if is_in_rss(date_str): continue
+        if is_in_rss(date_str) or has_github_release(date_str): continue
 
         print(f"[{PODCAST_NAME}] 補抓過去日期: {date_str}")
         html = fetch_html_via_proxy(SHOW_PAGE)
@@ -48,8 +55,8 @@ def check_and_update():
     if target_date.weekday() >= 5:
         return
         
-    if is_in_rss(date_str):
-        print(f"[{PODCAST_NAME}] 今天的集數 {date_str} 已經在 RSS 中。")
+    if is_in_rss(date_str) or has_github_release(date_str):
+        print(f"[{PODCAST_NAME}] 今天的集數 {date_str} 已經在 RSS 或已有本地去廣告 Release，略過外部抓取。")
         return
         
     broadcast_time = 1200

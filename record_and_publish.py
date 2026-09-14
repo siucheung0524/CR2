@@ -325,6 +325,9 @@ def git_commit_and_push(rss_file, show_name, date_str):
     """將更新的 RSS 檔案 commit 並 push 至 GitHub"""
     print(f"[{datetime.now()}] 正在檢查並推送到 GitHub main 分支...")
     try:
+        # 先確保本地包含遠端最新變更 (避免 GitHub Actions 或其他 commit 造成 push 衝突)
+        subprocess.run(["git", "-C", SCRIPT_DIR, "pull", "--rebase", "origin", "main"], capture_output=True, text=True)
+
         status = subprocess.run(["git", "-C", SCRIPT_DIR, "status", "--porcelain", rss_file], capture_output=True, text=True, check=True)
         if not status.stdout.strip():
             print(f"[{datetime.now()}] RSS 檔案沒有任何變更，略過 Git Commit 與 Push。")
@@ -333,9 +336,15 @@ def git_commit_and_push(rss_file, show_name, date_str):
         subprocess.run(["git", "-C", SCRIPT_DIR, "add", rss_file], check=True)
         commit_msg = f"Update {show_name} ({date_str}) & prune old episodes"
         subprocess.run(["git", "-C", SCRIPT_DIR, "commit", "-m", commit_msg], check=True)
-        subprocess.run(["git", "-C", SCRIPT_DIR, "push", "origin", "main"], check=True)
+
+        push_res = subprocess.run(["git", "-C", SCRIPT_DIR, "push", "origin", "main"], capture_output=True, text=True)
+        if push_res.returncode != 0:
+            print(f"[{datetime.now()}] Push 失敗，嘗試 pull --rebase 後重試...")
+            subprocess.run(["git", "-C", SCRIPT_DIR, "pull", "--rebase", "-X", "ours", "origin", "main"], check=True)
+            subprocess.run(["git", "-C", SCRIPT_DIR, "push", "origin", "main"], check=True)
+
         print(f"[{datetime.now()}] 成功推送到 GitHub！Podcast 訂閱源已即時更新。")
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         print(f"Git 操作發生錯誤: {e}")
 
 def main():
