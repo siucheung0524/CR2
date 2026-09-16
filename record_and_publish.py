@@ -220,8 +220,7 @@ def update_rss(rss_file_path, show_name, date_str, date_obj, download_url, file_
     </item>
 """
     if guid in content:
-        print(f"[{datetime.now()}] {guid} 已經在 RSS 中，替換為最新 Release 下載連結...")
-        pattern = rf'\s*<item>\s*<title>[^<]*</title>[\s\S]*?<guid[^>]*>{re.escape(guid)}</guid>[\s\S]*?</item>'
+        pattern = rf'\s*<item>(?:(?!<item>|</item>)[\s\S])*?<guid[^>]*>{re.escape(guid)}</guid>(?:(?!</item>)[\s\S])*?</item>'
         content = re.sub(pattern, "\n" + new_item.rstrip(), content, count=1)
     else:
         if "    <item>" in content:
@@ -293,7 +292,7 @@ def prune_old_releases(show_cfg, days_to_keep=14):
             except Exception:
                 pass
 
-            pattern = rf'\s*<item>\s*<title>[^<]*</title>[\s\S]*?<guid[^>]*>{re.escape(tag)}</guid>[\s\S]*?</item>'
+            pattern = rf'\s*<item>(?:(?!<item>|</item>)[\s\S])*?<guid[^>]*>{re.escape(tag)}</guid>(?:(?!</item>)[\s\S])*?</item>'
             rss_content = re.sub(pattern, '', rss_content)
             deleted_any = True
             print(f"[{datetime.now()}] 成功清除過期 Release 與 RSS 項目: {tag}")
