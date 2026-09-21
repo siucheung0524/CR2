@@ -629,13 +629,13 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
 【嚴格警告】：請務必依據上方逐字稿中的【真實時間戳】輸出精確數值！每個段落的開頭都必須找到該段落 Jingle 或主持對話【實際開始的時間戳】，結尾必須找到主持對話或歌曲【實際結束的時間戳】，嚴禁猜測或抄襲任何數字！
 
 請仔細閱讀前文後理，輸出【保留正片區間 (keep_intervals)】。
-請嚴格輸出純 JSON 格式，格式如下：
+請嚴格輸出純 JSON 格式，格式如下（注意：start 與 end 必須填入逐字稿中的實際秒數浮點數，絕不可填 0.0 或猜測數字）：
 {{
   "keep_intervals": [
-    {{"start": 123.4, "end": 1456.7, "description": "Part 1: 開場 Jingle 至半點歌曲/話題結束、商業破口開始前"}},
-    {{"start": 1789.0, "end": 3123.4, "description": "Part 2: 半點破口後接回至整點前主持對話真正結束處（完整包含中間歌曲，不得切碎）"}},
-    {{"start": 3678.9, "end": 4912.3, "description": "Part 3: 整點新聞後 Jingle 接回至半點廣告前（切除後續節目宣傳與報時）"}},
-    {{"start": 5345.6, "end": 6789.0, "description": "Part 4: 半點單元 Jingle 起拍至節目完結道別結束（精準切除有誰共鳴公益宣傳、後續商業廣告與整點新聞）"}}
+    {{"start": 0.0, "end": 0.0, "description": "Part 1: 開場 Jingle 起拍至半點歌曲/話題結束、商業破口開始前"}},
+    {{"start": 0.0, "end": 0.0, "description": "Part 2: 半點破口後接回至整點前主持對話真正結束處（完整包含中間歌曲，不得切碎）"}},
+    {{"start": 0.0, "end": 0.0, "description": "Part 3: 整點新聞後 Jingle 接回至半點廣告前（切除後續節目宣傳與報時）"}},
+    {{"start": 0.0, "end": 0.0, "description": "Part 4: 半點單元 Jingle 起拍至節目完結道別結束（精準切除有誰共鳴公益宣傳、後續商業廣告與整點新聞）"}}
   ]
 }}
 
@@ -700,12 +700,14 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
 
     keep_intervals = parsed.get("keep_intervals", [])
 
-    # 微調保護：若 Part 4 起點落在 5388s~5415s (主持開口處)，自動往前推至 5377s 以完整收錄 11:30 單元過場 Jingle 音樂
-    for item in keep_intervals:
+    # 智慧時序檢驗與安全防護
+    for i in range(len(keep_intervals) - 1):
         try:
-            ks = float(item["start"])
-            if 5388.0 <= ks <= 5415.0:
-                item["start"] = 5377.0
+            curr_end = float(keep_intervals[i]["end"])
+            next_start = float(keep_intervals[i+1]["start"])
+            gap = next_start - curr_end
+            if 4950.0 <= curr_end <= 5550.0 and gap < 120.0:
+                print(f"  ⚠️ [安全警示] 偵測到 11:30 廣告破口時長異常過短 ({gap:.1f}s)，請留意是否有廣告未切除！")
         except Exception:
             pass
 
