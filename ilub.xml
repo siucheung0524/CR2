@@ -16,6 +16,13 @@
     <itunes:category text="Comedy" />
     <itunes:explicit>false</itunes:explicit>
     <item>
+      <title>2026-09-22 聖艾粒LaLaLaLa</title>
+      <pubDate>Tue, 22 Sep 2026 19:05:00 +0800</pubDate>
+      <guid isPermaLink="false">ilub-20260922</guid>
+      <enclosure url="https://cr2-podcast.tang-bf4.workers.dev/releases/download/ilub-20260922/ilub-20260922.m4a" length="58957444" type="audio/x-m4a" />
+      <itunes:duration>01:20:40</itunes:duration>
+    </item>
+    <item>
       <title>2026-09-21 聖艾粒LaLaLaLa</title>
       <pubDate>Mon, 21 Sep 2026 19:05:00 +0800</pubDate>
       <guid isPermaLink="false">ilub-20260921</guid>
@@ -77,13 +84,6 @@
       <guid isPermaLink="false">ilub-20260909</guid>
       <enclosure url="https://cr2-podcast.tang-bf4.workers.dev/releases/download/ilub-20260909/ilub-20260909.m4a" length="51955794" type="audio/x-m4a" />
       <itunes:duration>01:11:07</itunes:duration>
-    </item>
-    <item>
-      <title>2026-09-08 聖艾粒LaLaLaLa</title>
-      <pubDate>Tue, 08 Sep 2026 19:05:00 +0800</pubDate>
-      <guid isPermaLink="false">ilub-20260908</guid>
-      <enclosure url="https://cr2-podcast.tang-bf4.workers.dev/releases/download/ilub-20260908/ilub-20260908.m4a" length="58058794" type="audio/x-m4a" />
-      <itunes:duration>01:19:29</itunes:duration>
     </item>
     <item>
       <title>2026-09-02 聖艾粒LaLaLaLa</title>
