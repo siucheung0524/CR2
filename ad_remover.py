@@ -440,25 +440,28 @@ def get_gemini_api_key():
     return None
 
 
-# 候選 Gemini 模型池（包含使用者指定之 Flash 3.8, 3.7, 3.6, 3.5 旗艦系列，輪流調用以均衡配額消耗，Lite 作為後備容錯）
+# 候選 Gemini 旗艦 Flash 模型池（嚴禁任何 Lite 模型，輪流調用以均衡配額消耗）
 DEFAULT_GEMINI_MODELS = [
     "gemini-3.8-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
     "gemini-3-flash-preview",
-    "gemini-3.5-flash-lite",
-    "gemini-3.1-flash-lite"
+    "gemini-flash-latest"
 ]
 GEMINI_STATE_FILE = os.path.join(SCRIPT_DIR, ".gemini_model_state.json")
 
 
 def get_gemini_model_candidates():
-    """取得模型池列表，支援從環境變數 GEMINI_MODELS 覆寫"""
+    """取得模型池列表，支援從環境變數 GEMINI_MODELS 覆寫，並強制過濾剔除所有 Lite 模型"""
     env_models = os.environ.get("GEMINI_MODELS")
     if env_models:
-        return [m.strip() for m in env_models.split(",") if m.strip()]
-    return list(DEFAULT_GEMINI_MODELS)
+        raw_models = [m.strip() for m in env_models.split(",") if m.strip()]
+    else:
+        raw_models = list(DEFAULT_GEMINI_MODELS)
+    # 嚴格禁制：任何包含 'lite' 的模型一律剔除，確保只有全尺寸上下文旗艦模型參與分析
+    safe_models = [m for m in raw_models if "lite" not in m.lower()]
+    return safe_models if safe_models else list(DEFAULT_GEMINI_MODELS)
 
 
 def get_next_gemini_models_sequence():
@@ -531,9 +534,9 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     調用 Google Gemini Flash 雲端大模型進行前文後理（上下文）全篇語意理解與去廣告區間劃定。
     支援多模型輪流使用（Round-Robin）與自動容錯轉移（Multi-Model Sequential Failover）。
     優勢：
-    1. 輪流調用 Gemini 3.8 Flash, 3.7 Flash, 3.6 Flash, 3.5 Flash 及 Lite 系列，分攤並最大化各模型 Quota。
+    1. 輪流調用 Gemini 3.8 Flash, 3.7 Flash, 3.6 Flash, 3.5 Flash, 3 Flash Preview 及 Flash Latest 旗艦系列，分攤並最大化各模型 Quota。
     2. 遇到配額耗盡（429）或臨時不可用（503）時，自動依序嘗試下一款模型。
-    3. 具備長文本推理與前文後理理解，能精確區分主持人隨口閒聊的口語贊助/廣告詞 vs 真實廣告破口。
+    3. 嚴格禁用任何 Lite 系列模型，確保 100% 採用具備全尺寸上下文推理能力的旗艦模型。
     4. 依據節目主題保護《Bad Girl 大過佬》每週各單元與《聖艾粒》黃埔 AI 豪子/聽眾鼓仔。
     """
     if not api_key:
@@ -668,6 +671,9 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     parsed = None
 
     for idx, cand_model in enumerate(model_queue):
+        if "lite" in cand_model.lower():
+            print(f"  🛑 略過 Lite 模型 [{cand_model}]（系統嚴格禁用 Lite 模型以確保剪輯精確度）")
+            continue
         print(f"  🤖 嘗試調用 Gemini 模型 [{cand_model}] (輪替順位 {idx+1}/{len(model_queue)})...")
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={api_key}"
         req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
