@@ -10,6 +10,13 @@
     <itunes:category text="Comedy" />
     <itunes:explicit>false</itunes:explicit>
     <item>
+      <title>2026-10-02 Bad Girl 大過佬</title>
+      <pubDate>Fri, 02 Oct 2026 12:05:00 +0800</pubDate>
+      <guid isPermaLink="false">bgog-20261002</guid>
+      <enclosure url="https://cr2-podcast.tang-bf4.workers.dev/releases/download/bgog-20261002/bgog-20261002.m4a" length="60246591" type="audio/x-m4a" />
+      <itunes:duration>01:22:25</itunes:duration>
+    </item>
+    <item>
       <title>2026-10-01 Bad Girl 大過佬</title>
       <pubDate>Thu, 01 Oct 2026 12:05:00 +0800</pubDate>
       <guid isPermaLink="false">bgog-20261001</guid>
@@ -71,13 +78,6 @@
       <guid isPermaLink="false">bgog-20260921</guid>
       <enclosure url="https://cr2-podcast.tang-bf4.workers.dev/releases/download/bgog-20260921/bgog-20260921.m4a" length="64256204" type="audio/x-m4a" />
       <itunes:duration>01:27:58</itunes:duration>
-    </item>
-    <item>
-      <title>2026-09-18 Bad Girl 大過佬</title>
-      <pubDate>Fri, 18 Sep 2026 12:05:00 +0800</pubDate>
-      <guid isPermaLink="false">bgog-20260918</guid>
-      <enclosure url="https://cr2-podcast.tang-bf4.workers.dev/releases/download/bgog-20260918/bgog-20260918.m4a" length="66129489" type="audio/x-m4a" />
-      <itunes:duration>01:30:29</itunes:duration>
     </item>
     <item>
       <title>2026-09-03 Bad Girl 大過佬</title>
