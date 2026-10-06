@@ -545,6 +545,10 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
         raise ValueError("未提供有效的 GEMINI_API_KEY")
 
     lines = []
+    hallucination_patterns = [
+        "請不吝點贊", "请不吝点赞", "優優獨播劇場", "优优独播剧场", "Zither Harp",
+        "點贊 訂閱", "点赞 订阅", "明鏡與點點", "明镜与点点", "YoYo Television"
+    ]
     for seg in transcript_segments:
         if "offsets" in seg:
             t0 = seg["offsets"].get("from", 0) / 1000.0
@@ -552,6 +556,10 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
             t0 = seg.get("start", 0.0)
         text = seg.get("text", "").strip()
         if text:
+            for pat in hallucination_patterns:
+                if pat in text:
+                    text = "[音樂 / 流行歌曲播放中]"
+                    break
             m, s = int(t0 // 60), int(t0 % 60)
             lines.append(f"[{m:02d}:{s:02d} ({t0:.1f}s)] {text}")
 
@@ -614,23 +622,25 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
 1. 【必須保留的正片 (keep_intervals)】：
    - 主持人之間的所有交談、話題閒聊、聽眾電話互動、金句、嘉賓訪談、單元遊戲。
    - 節目專屬 Jingle、開場主題曲、過場 Bumper（包含每半點過後的單元 Jingle）。
-   - 【流行歌曲與音樂連貫性（極度重要防誤殺）】：
-     主持人在話題之間或時段中段播放的流行歌曲（例如主持人在 10:20 說「陣間返嚟同你講呢個名/再講」隨後播歌，或在 10:45 說「我哋最後返嚟講」隨後播歌），【100% 屬於電台節目正片內容，絕對不可當作破口切除，更絕對不可把同一個 Part 切碎成 2a/2b 碎片】！歌曲必須與前後對話完整連貫保留！整集節目原則上應剛好劃分為 Part 1、Part 2、Part 3、Part 4 四個主要大區間。
+   - 【流行歌曲與純音樂連貫性（極度重要防誤殺，絕對嚴禁切歌！）】：
+     1. 主持人在時段中播放的流行歌曲（包含片頭主題曲前奏音樂、話題之間的插曲、半點前/整點前播放的流行歌、以及節目最後道別後的片尾曲直到 12:00 新聞前），【100% 屬於電台節目正片內容，絕對不准切除】！歌曲必須與前後對話完整連貫保留！
+     2. 逐字稿中標記為「[音樂 / 流行歌曲播放中]」或歌詞片段的內容，屬於背景音樂或電台流行歌，【絕對不是廣告】，必須完整連貫保留在該段正片中！
+     3. 整集節目原則上應剛好劃分為 Part 1、Part 2、Part 3、Part 4 四個主要大區間，絕不可把段落切碎成小碎片。
    - 節目結尾主持人的最後道別（如「下個禮拜再見，拜拜！」、「多謝嘉賓」）及之前的所有話題。
 
 2. 【四個段落（Parts 1~4）的起止點判定規範】：
    - 【Part 1（第一小時上半段）】：
-     * 起點：開播前電台台呼/天氣/商業廣告以及前續節目宣傳（例如《聖艾粒LaLaLaLa》宣傳片）結束，節目專屬開場主題曲前奏音樂響起之處（注意：逐字稿前奏常標記為音樂或優優獨播劇場等，必須取前奏音樂開始處，切勿因前奏為純音樂而延遲切入歌詞！）。
-     * 終點：10:30（或 17:30）商業廣告與報時開始前。若主持人在話題結束後播了一首流行歌再入廣告，歌曲必須連貫保留，切口落在歌曲結束、廣告/報時開始的一剎那（切勿在主持人說「陣間再講」時就提前截斷！）。
+     * 起點：開播前電台台呼/天氣/商業廣告以及前續節目宣傳（例如《聖艾粒LaLaLaLa》宣傳片、MIRROR 等）結束，節目專屬開場主題曲前奏音樂響起之處（注意：逐字稿前奏常標記為音樂或純音樂，必須取前奏音樂起拍開始處，切勿因前奏為純音樂而延遲切入歌詞！）。
+     * 終點：10:30（或 17:30）商業廣告與報時開始前（通常落在 1300s~1500s / 21~25 分鐘左右）。【絕對不可在 18 分鐘或話題剛說完就提前切斷】！若主持人在話題結束後播了一首流行歌（如 1080s~1280s）並繼續說話/宣布活動再入廣告，歌曲與後續對話必須完整連貫保留，切口落在歌曲與話題結束、10:30 商業廣告/報時開始的一剎那！
    - 【Part 2（第一小時下半段）】：
      * 起點：半點廣告破口結束後，主持人說話或節目 Jingle 接回之處。
-     * 終點：【極度重要】必須依據逐字稿實際語意！主持人們在整點前結束話題的時間各集皆不同。【絕對不可在主持人和嘉賓還在聊天途中提前截斷】！中間若有播放歌曲，必須完整包含在 Part 2 內，不得把 Part 2 拆碎！只有當主持人明確結束話題，隨後緊接著商業廣告、宣傳聲帶或整點新聞報時之處，才是 Part 2 終點！
+     * 終點：【極度重要】必須依據逐字稿實際語意！主持人們在整點前結束話題的時間各集皆不同。【絕對不可在主持人和嘉賓還在聊天途中提前截斷】！中間若有播放歌曲，必須完整包含在 Part 2 內，不得把 Part 2 拆碎！只有當主持人明確結束話題，隨後緊接著商業廣告、宣傳聲帶（如《口水多過浪花》等）或整點新聞報時之處，才是 Part 2 終點！
    - 【Part 3（第二小時上半段）】：
      * 起點：【極度重要】整點新聞後，若主持人僅隨口說幾句（如「打電話上嚟玩遊戲」）隨即進入商業廣告破口，或中間有商業贊助遊戲（如《通往十方之路》換票證、電影戲票問答）、商業特約廣告及其他節目/活動宣傳聲帶（如《叱咤樂壇》、903 All Star 籃球賽宣傳等），【這些全部屬於商業破口，必須完全切除】！Part 3 起點必須精準落在第二小時正式單元專屬 Jingle（如週二【衰佬CLS】主題 Jingle「森仔 咩啊... 來大笑代替上路...」、週四【粒粒皆辛苦/十句講曬】「三個農夫聊天 我們絕對不講多 不講少 粒粒皆辛苦」或嘉賓專訪 Jingle）起拍響起的瞬間！
      * 終點：【極度重要】半點商業廣告與報時開始前。若主持話題結束後緊接著播放其他節目宣傳聲帶（如《口水多過浪花》等）或商業廣告，這屬於非節目破口，【必須在主持人說完最後一句話的瞬間立即結束切斷】，絕不可留入正片！
    - 【Part 4（第二小時下半段）】：
      * 起點：【極度重要】半點廣告破口通常包含《此時此刻 有誰共鳴》（公益團體呼籲如捐款支持某協會）等商業/公益宣傳，【全部屬於廣告破口，必須完全切除】！Part 4 起點必須精確落在單元專屬 Jingle（如 Everyday is 新day、雞仔好人、衰佬CLS 等）起拍響起的瞬間，【絕不可延遲切入，也絕不可將前面的有誰共鳴公益聲帶保留進來】！
-     * 終點：【極度重要】節目最後主持人與嘉賓互相道別、感謝（例如「下星期見，拜拜！」）說完最後一句話的瞬間立即切斷！後續播出的商業廣告（如汽車保養、歌手新單曲、驗車公司宣傳、叱咤903台呼）以及整點新聞，【全部屬於破口，絕對不可留入正片】！
+     * 終點：【極度重要】節目最後主持人道別後，若有播放片尾曲，【片尾曲必須完整保留】直到 12:00 整點新聞報道開始前（通常在 6800s~6840s）！後續播出的商業廣告及整點新聞，【全部屬於破口，切除在新聞報時前一瞬間】！
 
 【嚴格警告】：請務必依據上方逐字稿中的【真實時間戳】輸出精確數值！每個段落的開頭都必須找到該段落 Jingle 或主持對話【實際開始的時間戳】，結尾必須找到主持對話或歌曲【實際結束的時間戳】，嚴禁猜測或抄襲任何數字！
 
@@ -709,7 +719,44 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
 
     keep_intervals = parsed.get("keep_intervals", [])
 
-    # 智慧時序檢驗與安全防護
+    # 智慧時鐘錨點檢驗與防誤殺歌曲保護 (Clock-Hour Anchors & Pop Song Protection)
+    if keep_intervals:
+        # 1. Part 1 結束時間防提前切歌保護 (正常 10:30 廣告前，時間必在 1300s 左右)
+        p1 = keep_intervals[0]
+        try:
+            p1_end = float(p1["end"])
+            if p1_end < 1250.0:
+                print(f"  ⚠️ [安全修正] Part 1 結束點過早 ({p1_end:.1f}s)，疑似誤切話題後歌曲！正在尋找 10:30 真正廣告破口...")
+                for seg in transcript_segments:
+                    s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
+                    s_to = seg.get("offsets", {}).get("to", 0) / 1000.0 if "offsets" in seg else seg.get("end", 0.0)
+                    s_text = seg.get("text", "")
+                    if 1250.0 <= s_from <= 1380.0:
+                        if any(k in s_text for k in ["Halloween", "萬聖節", "大過佬", "十點半", "10點半", "10時半", "得獎", "WhatsApp"]):
+                            p1["end"] = round(s_to + 1.0, 2)
+                        elif s_from > float(p1["end"]) and not any(k in s_text for k in AD_KEYWORDS + TRAFFIC_KEYWORDS + WEATHER_KEYWORDS):
+                            p1["end"] = round(s_to, 2)
+                print(f"  ✅ Part 1 結束點已安全修正延伸至: {p1['end']}s")
+        except Exception as e:
+            print(f"  ⚠️ Part 1 檢查出錯: {e}")
+
+        # 2. Part 4 結尾片尾曲防提前切歌保護 (若未保留到 12:00 新聞前)
+        p_last = keep_intervals[-1]
+        try:
+            last_end = float(p_last["end"])
+            news_start = None
+            for seg in transcript_segments:
+                s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
+                s_text = seg.get("text", "")
+                if s_from >= 6750.0 and any(k in s_text for k in ["新聞報道", "新聞報導", "報道新聞", "報導新聞", "商業電台新聞", "行政長官", "特區政府"]):
+                    news_start = s_from
+                    break
+            if news_start and last_end < news_start - 10.0:
+                print(f"  ⚠️ [安全修正] 節目結尾片尾曲被提前截斷 ({last_end:.1f}s -> 新聞起點 {news_start:.1f}s)，安全延伸保留片尾曲！")
+                p_last["end"] = round(news_start - 1.0, 2)
+        except Exception as e:
+            print(f"  ⚠️ Part 4 結尾檢查出錯: {e}")
+
     for i in range(len(keep_intervals) - 1):
         try:
             curr_end = float(keep_intervals[i]["end"])
