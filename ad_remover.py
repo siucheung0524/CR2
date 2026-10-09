@@ -625,19 +625,23 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
    - 【流行歌曲與純音樂連貫性（極度重要防誤殺，絕對嚴禁切歌！）】：
      1. 主持人在時段中播放的流行歌曲（包含片頭主題曲前奏音樂、話題之間的插曲、半點前/整點前播放的流行歌、以及節目最後道別後的片尾曲直到 12:00 新聞前），【100% 屬於電台節目正片內容，絕對不准切除】！歌曲必須與前後對話完整連貫保留！
      2. 逐字稿中標記為「[音樂 / 流行歌曲播放中]」或歌詞片段的內容，屬於背景音樂或電台流行歌，【絕對不是廣告】，必須完整連貫保留在該段正片中！
-     3. 整集節目原則上應剛好劃分為 Part 1、Part 2、Part 3、Part 4 四個主要大區間，絕不可把段落切碎成小碎片。
+     3. 【段落劃分與中途短廣告（極度重要，絕不可丟棄後半段主持話題！）】：
+        - 節目按時鐘劃分為四個大時段（Part 1 ~ Part 4）。
+        - 若某個時段中途出現 1~2 分鐘的極短商業廣告（例如 10:42 播了 1 分鐘汽車廣告、或 11:15 播了 1 分鐘活動宣傳，隨後主持人接回繼續主持話題），【請務必切除該 1 分鐘廣告並拆分為 a/b 兩個保留段落（如 Part 2a, Part 2b 或 Part 3a, Part 3b）】！
+        - 【絕對不可因為時段中途出現 1 分鐘短廣告，就把該時段後續長達 8~10 分鐘的主持節目全盤拋棄】！
+        - keep_intervals 可以輸出 4 到 7 個正片區間，只要是真正的主持話題與歌曲，都必須完整保留！
    - 節目結尾主持人的最後道別（如「下個禮拜再見，拜拜！」、「多謝嘉賓」）及之前的所有話題。
 
 2. 【四個段落（Parts 1~4）的起止點判定規範】：
    - 【Part 1（第一小時上半段）】：
      * 起點：開播前電台台呼/天氣/商業廣告以及前續節目宣傳（例如《聖艾粒LaLaLaLa》宣傳片、MIRROR 等）結束，節目專屬開場主題曲前奏音樂響起之處（注意：逐字稿前奏常標記為音樂或純音樂，必須取前奏音樂起拍開始處，切勿因前奏為純音樂而延遲切入歌詞！）。
      * 終點：10:30（或 17:30）商業廣告與報時開始前（通常落在 1300s~1500s / 21~25 分鐘左右）。【絕對不可在 18 分鐘或話題剛說完就提前切斷】！若主持人在話題結束後播了一首流行歌（如 1080s~1280s）並繼續說話/宣布活動再入廣告，歌曲與後續對話必須完整連貫保留，切口落在歌曲與話題結束、10:30 商業廣告/報時開始的一剎那！
-   - 【Part 2（第一小時下半段）】：
-     * 起點：半點廣告破口結束後，主持人說話或節目 Jingle 接回之處。
-     * 終點：【極度重要】必須依據逐字稿實際語意！主持人們在整點前結束話題的時間各集皆不同。【絕對不可在主持人和嘉賓還在聊天途中提前截斷】！中間若有播放歌曲，必須完整包含在 Part 2 內，不得把 Part 2 拆碎！只有當主持人明確結束話題，隨後緊接著商業廣告、宣傳聲帶（如《口水多過浪花》等）或整點新聞報時之處，才是 Part 2 終點！
-   - 【Part 3（第二小時上半段）】：
+   - 【Part 2（第一小時下半段，可拆為 2a/2b）】：
+     * 起點：半點廣告破口結束後，主持人說話或節目 Jingle 接回之處（約 1700s 左右）。
+     * 終點：【極度重要】必須依據逐字稿實際語意！主持人們在整點前結束話題的時間各集皆不同。【絕對不可在主持人和嘉賓還在聊天途中提前截斷】！若中途有 1 分鐘廣告，拆分為 2a 與 2b，後半段話題必須聊到 11:00 整點新聞報時前（約 3200s 左右）！只有當主持人明確結束話題，隨後緊接著商業廣告、宣傳聲帶（如《口水多過浪花》等）或整點新聞報時之處，才是 Part 2 終點！
+   - 【Part 3（第二小時上半段，可拆為 3a/3b）】：
      * 起點：【極度重要】整點新聞後，若主持人僅隨口說幾句（如「打電話上嚟玩遊戲」）隨即進入商業廣告破口，或中間有商業贊助遊戲（如《通往十方之路》換票證、電影戲票問答）、商業特約廣告及其他節目/活動宣傳聲帶（如《叱咤樂壇》、903 All Star 籃球賽宣傳等），【這些全部屬於商業破口，必須完全切除】！Part 3 起點必須精準落在第二小時正式單元專屬 Jingle（如週二【衰佬CLS】主題 Jingle「森仔 咩啊... 來大笑代替上路...」、週四【粒粒皆辛苦/十句講曬】「三個農夫聊天 我們絕對不講多 不講少 粒粒皆辛苦」或嘉賓專訪 Jingle）起拍響起的瞬間！
-     * 終點：【極度重要】半點商業廣告與報時開始前。若主持話題結束後緊接著播放其他節目宣傳聲帶（如《口水多過浪花》等）或商業廣告，這屬於非節目破口，【必須在主持人說完最後一句話的瞬間立即結束切斷】，絕不可留入正片！
+     * 終點：【極度重要】若中途有 1 分鐘短廣告，拆分為 3a 與 3b，後半段話題必須聊到 11:30 半點報時與商業廣告開始前（約 5000s 左右）！絕不可在 11:15 說完一個話題就提早將整個 Part 3 截斷！
    - 【Part 4（第二小時下半段）】：
      * 起點：【極度重要】半點廣告破口通常包含《此時此刻 有誰共鳴》（公益團體呼籲如捐款支持某協會）等商業/公益宣傳，【全部屬於廣告破口，必須完全切除】！Part 4 起點必須精確落在單元專屬 Jingle（如 Everyday is 新day、雞仔好人、衰佬CLS 等）起拍響起的瞬間，【絕不可延遲切入，也絕不可將前面的有誰共鳴公益聲帶保留進來】！
      * 終點：【極度重要】節目最後主持人道別後，若有播放片尾曲，【片尾曲必須完整保留】直到 12:00 整點新聞報道開始前（通常在 6800s~6840s）！後續播出的商業廣告及整點新聞，【全部屬於破口，切除在新聞報時前一瞬間】！
@@ -645,13 +649,13 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
 【嚴格警告】：請務必依據上方逐字稿中的【真實時間戳】輸出精確數值！每個段落的開頭都必須找到該段落 Jingle 或主持對話【實際開始的時間戳】，結尾必須找到主持對話或歌曲【實際結束的時間戳】，嚴禁猜測或抄襲任何數字！
 
 請仔細閱讀前文後理，輸出【保留正片區間 (keep_intervals)】。
-請嚴格輸出純 JSON 格式，格式如下（注意：start 與 end 必須填入逐字稿中的實際秒數浮點數，絕不可填 0.0 或猜測數字）：
+請嚴格輸出純 JSON 格式，格式如下（注意：start 與 end 必須填入逐字稿中的實際秒數浮點數，絕不可填 0.0 或猜測數字；若有中途短廣告可輸出 2a/2b、3a/3b）：
 {{
   "keep_intervals": [
-    {{"start": 0.0, "end": 0.0, "description": "Part 1: 開場 Jingle 起拍至半點歌曲/話題結束、商業破口開始前"}},
-    {{"start": 0.0, "end": 0.0, "description": "Part 2: 半點破口後接回至整點前主持對話真正結束處（完整包含中間歌曲，不得切碎）"}},
-    {{"start": 0.0, "end": 0.0, "description": "Part 3: 整點新聞後 Jingle 接回至半點廣告前（切除後續節目宣傳與報時）"}},
-    {{"start": 0.0, "end": 0.0, "description": "Part 4: 半點單元 Jingle 起拍至節目完結道別結束（精準切除有誰共鳴公益宣傳、後續商業廣告與整點新聞）"}}
+    {{"start": 0.0, "end": 0.0, "description": "Part 1: 開場 Jingle 起拍至 10:30 歌曲/話題結束、商業破口開始前"}},
+    {{"start": 0.0, "end": 0.0, "description": "Part 2 (或 2a/2b): 10:30 半點破口後接回至 11:00 整點新聞前主持對話（若中途有 1 分鐘廣告請拆分切除，切勿丟棄後半段主持話題！）"}},
+    {{"start": 0.0, "end": 0.0, "description": "Part 3 (或 3a/3b): 11:00 整點新聞後單元 Jingle 接回至 11:30 廣告前（若中途有 1 分鐘廣告請拆分切除，切勿丟棄後半段主持話題！）"}},
+    {{"start": 0.0, "end": 0.0, "description": "Part 4: 11:30 半點單元 Jingle 起拍至節目完結道別與片尾曲結束（切除有誰共鳴與 12:00 新聞）"}}
   ]
 }}
 
@@ -756,6 +760,44 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
                 p_last["end"] = round(news_start - 1.0, 2)
         except Exception as e:
             print(f"  ⚠️ Part 4 結尾檢查出錯: {e}")
+
+    # 3. 檢查是否有巨大空白落入電台正片時段（防中途短廣告後主持話題被整段漏掉）
+    # 例如 Part 2 在 10:42 左右中斷，但到 11:00 新聞前（2600s~3200s）還有長達數百秒的主持話題！
+    # 又如 Part 3 在 11:13 左右中斷，但到 11:30 廣告前（4500s~5005s）還有長達數百秒的主持話題！
+    additional_keeps = []
+    for i in range(len(keep_intervals) - 1):
+        try:
+            curr_end = float(keep_intervals[i]["end"])
+            next_start = float(keep_intervals[i+1]["start"])
+            gap = next_start - curr_end
+            is_p2_gap = (1700.0 <= curr_end <= 2800.0 and next_start >= 3500.0 and gap > 300.0)
+            is_p3_gap = (3700.0 <= curr_end <= 4600.0 and next_start >= 5300.0 and gap > 300.0)
+            if is_p2_gap or is_p3_gap:
+                print(f"  ⚠️ [異常時長警示] 偵測到節目時段內巨大空白破口 ({curr_end:.1f}s -> {next_start:.1f}s, 時長 {gap:.1f}s)！正在檢查是否有正片被遺漏...")
+                seg_in_gap = [
+                    s for s in transcript_segments
+                    if curr_end <= (s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)) <= next_start
+                ]
+                found_start = None
+                found_end = None
+                for s in seg_in_gap:
+                    s_f = s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)
+                    s_t = s.get("offsets", {}).get("to", 0)/1000.0 if "offsets" in s else s.get("end", 0.0)
+                    s_txt = s.get("text", "")
+                    if any(k in s_txt for k in ["Bad Girl", "大過佬", "大過老", "來大笑代替上路", "申美", "森美", "阿正", "Elsie"]):
+                        if found_start is None:
+                            found_start = s_f
+                    if found_start is not None and not any(k in s_txt for k in NEWS_START_KEYWORDS + TRAFFIC_KEYWORDS + WEATHER_KEYWORDS + ["11點", "11:30"]):
+                        found_end = s_t
+                if found_start and found_end and (found_end - found_start > 120.0):
+                    print(f"  ✅ [安全搶救] 成功在巨大破口中挽回遺漏正片: {found_start:.1f}s -> {found_end:.1f}s (時長: {found_end-found_start:.1f}s)！")
+                    additional_keeps.append({"start": round(found_start, 2), "end": round(found_end, 2), "description": "安全搶救遺漏正片話題"})
+        except Exception as e:
+            print(f"  ⚠️ 破口檢驗出錯: {e}")
+
+    if additional_keeps:
+        keep_intervals.extend(additional_keeps)
+        keep_intervals.sort(key=lambda x: float(x["start"]))
 
     for i in range(len(keep_intervals) - 1):
         try:
