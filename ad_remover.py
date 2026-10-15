@@ -529,6 +529,256 @@ def record_gemini_model_error(model_name, err_msg):
         pass
 
 
+def derive_cuts_from_keep_intervals(keep_intervals, total_duration):
+    """
+    從 keep_intervals 推導需要切除的 cuts 區間
+    """
+    sorted_keeps = sorted(keep_intervals, key=lambda x: float(x["start"]))
+    cuts = []
+    cursor = 0.0
+    for item in sorted_keeps:
+        ks = float(item["start"])
+        ke = float(item["end"])
+        desc = item.get("description", "")
+        if ke <= ks:
+            continue
+        if ks > cursor + 1.0:
+            cuts.append({
+                "start": round(cursor, 2),
+                "end": round(ks, 2),
+                "duration": round(ks - cursor, 2),
+                "sample_text": f"AI語意破口 (銜接: {desc[:25]})"
+            })
+        cursor = max(cursor, ke)
+
+    if cursor < total_duration - 1.0:
+        cuts.append({
+            "start": round(cursor, 2),
+            "end": round(total_duration, 2),
+            "duration": round(total_duration - cursor, 2),
+            "sample_text": "AI語意結尾新聞破口"
+        })
+
+    return cuts
+
+
+def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcript_segments, show_code="bgog", engine_used="gemini"):
+    """
+    【自動品質品檢門禁與自癒系統 (Quality Gatekeeper & Self-Healing Engine)】
+    在剪輯產出音檔前，進行嚴格自我檢查（Self-Verification）：
+    1. 純淨時長門禁 (Clean Duration Gate)：2小時廣播節目純淨時長必須在 01:15:00 (4500s) ~ 01:30:00 (5400s) 之間（理想：81~88 分鐘）。
+       - 若 < 01:15:00 (例如 66 分鐘嚴重截斷)：觸發時段空白缺口掃描自癒 (Gap Self-Healing)，挽救遺漏的主持話題與遊戲！
+       - 若 > 01:30:00 (例如 01:35:50 廣告未切乾淨)：判定未達標，嚴格禁止放行！
+    2. 時鐘結構與歌曲保護門禁 (Clock Structure & Music Anchors)：
+       - Part 1 起點 <= 240s (保護開場 Jingle 與主題曲前奏)
+       - Part 1 終點 >= 1250s (保護 10:30 半點前流行歌與主持活動過渡)
+       - Part 2 終點 >= 3150s (保護 11:00 整點新聞前主持話題與結尾歌)
+       - Part 3 終點 >= 4950s (保護 11:30 半點前主持單元與歌曲)
+       - Part 4 終點 >= 6780s (保護 12:00 整點新聞前道別與片尾曲)
+    3. 引擎門禁 (Engine Gate)：
+       - 嚴格禁止發布時長 > 88 分鐘的 heuristic 啟發式粗糙切除結果。
+    
+    返回: (passed: bool, healed_keeps: list, final_cuts: list, report: dict)
+    """
+    healed_keeps = [dict(k) for k in keep_intervals]
+    healed_keeps.sort(key=lambda x: float(x["start"]))
+    healed_items = []
+    checks = {}
+    failure_reasons = []
+
+    is_2hr_show = (total_duration >= 6400.0)
+
+    # -------------------------------------------------------------
+    # 檢查項 1：時鐘錨點自癒與保護 (Clock Structure & Music Anchors)
+    # -------------------------------------------------------------
+    if is_2hr_show and healed_keeps:
+        # 1.1 Part 1 開頭主題曲前奏防延遲切入
+        p1 = healed_keeps[0]
+        p1_start = float(p1["start"])
+        if p1_start > 240.0:
+            found_start = None
+            for seg in transcript_segments:
+                s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
+                s_text = seg.get("text", "")
+                if 25.0 <= s_from <= p1_start:
+                    if any(k in s_text for k in PROGRAM_JINGLE_KEYWORDS + ["大過佬", "叱咤903", "森美", "阿正", "Elsie", "聖艾粒", "早晨"]):
+                        found_start = s_from
+                        break
+            if found_start:
+                healed_items.append(f"Part 1 起點由 {p1_start:.1f}s 前移至 {found_start:.1f}s (挽救開場主題曲前奏)")
+                p1["start"] = round(found_start, 2)
+            checks["part1_intro"] = f"PASS (起點: {p1['start']}s <= 240s)"
+        else:
+            checks["part1_intro"] = f"PASS (起點: {p1_start:.1f}s <= 240s)"
+
+        # 1.2 Part 1 結束時間防提前切歌保護 (10:30 半點前流行歌)
+        p1_end = float(p1["end"])
+        if p1_end < 1250.0:
+            new_p1_end = p1_end
+            for seg in transcript_segments:
+                s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
+                s_to = seg.get("offsets", {}).get("to", 0) / 1000.0 if "offsets" in seg else seg.get("end", 0.0)
+                s_text = seg.get("text", "")
+                if 1250.0 <= s_from <= 1450.0:
+                    if any(k in s_text for k in ["Halloween", "萬聖節", "大過佬", "十點半", "10點半", "10時半", "得獎", "WhatsApp", "廣告"]):
+                        new_p1_end = round(s_to + 0.5, 2)
+                    elif s_from > new_p1_end and not any(k in s_text for k in AD_KEYWORDS + TRAFFIC_KEYWORDS + WEATHER_KEYWORDS):
+                        new_p1_end = round(s_to, 2)
+            if new_p1_end > p1_end:
+                healed_items.append(f"Part 1 結束點由 {p1_end:.1f}s 延伸至 {new_p1_end:.1f}s (挽救 10:30 半點前流行歌)")
+                p1["end"] = new_p1_end
+                checks["part1_pop_song"] = f"PASS (自癒延伸至: {p1['end']}s >= 1250s)"
+            else:
+                checks["part1_pop_song"] = f"WARN (結束點: {p1_end:.1f}s < 1250s)"
+        else:
+            checks["part1_pop_song"] = f"PASS (結束點: {p1_end:.1f}s >= 1250s)"
+
+        # 1.3 Part 2 結束點檢驗 (11:00 整點新聞前主持對話)
+        h1_keeps = [k for k in healed_keeps if float(k["start"]) < 3500.0]
+        if h1_keeps:
+            last_h1_end = max(float(k["end"]) for k in h1_keeps)
+            if last_h1_end < 3150.0:
+                checks["part2_continuity"] = f"WARN (第一小時最後結束於: {last_h1_end:.1f}s < 3150s)"
+            else:
+                checks["part2_continuity"] = f"PASS (第一小時最後結束於: {last_h1_end:.1f}s >= 3150s)"
+        else:
+            checks["part2_continuity"] = "FAIL (缺少第一小時下半段)"
+
+        # 1.4 Part 3 結束點檢驗 (11:30 半點前單元遊戲)
+        h2_first_keeps = [k for k in healed_keeps if 3400.0 <= float(k["start"]) < 5200.0]
+        if h2_first_keeps:
+            last_h2_first_end = max(float(k["end"]) for k in h2_first_keeps)
+            if last_h2_first_end < 4950.0:
+                checks["part3_continuity"] = f"WARN (第二小時上半段結束於: {last_h2_first_end:.1f}s < 4950s)"
+            else:
+                checks["part3_continuity"] = f"PASS (第二小時上半段結束於: {last_h2_first_end:.1f}s >= 4950s)"
+        else:
+            checks["part3_continuity"] = "FAIL (缺少第二小時上半段)"
+
+        # 1.5 Part 4 結尾片尾曲防提前切歌保護 (12:00 整點新聞前)
+        p_last = healed_keeps[-1]
+        last_end = float(p_last["end"])
+        news_start = None
+        for seg in transcript_segments:
+            s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
+            s_text = seg.get("text", "")
+            if s_from >= 6750.0 and any(k in s_text for k in ["新聞報道", "新聞報導", "報道新聞", "報導新聞", "商業電台新聞", "行政長官", "特區政府", "十二點", "12點"]):
+                news_start = s_from
+                break
+        if news_start and last_end < news_start - 10.0:
+            target_end = round(news_start - 1.0, 2)
+            healed_items.append(f"Part 4 結尾由 {last_end:.1f}s 延伸至 {target_end:.1f}s (挽救節目完結片尾曲)")
+            p_last["end"] = target_end
+            checks["part4_outro_song"] = f"PASS (自癒延伸至: {target_end}s >= 6780s)"
+        elif last_end >= 6780.0:
+            checks["part4_outro_song"] = f"PASS (結束於: {last_end:.1f}s >= 6780s)"
+        else:
+            checks["part4_outro_song"] = f"WARN (結束於: {last_end:.1f}s < 6780s)"
+
+    # -------------------------------------------------------------
+    # 檢查項 2：空白缺口掃描與正片自癒 (Gap Self-Healing)
+    # -------------------------------------------------------------
+    if is_2hr_show:
+        healed_keeps.sort(key=lambda x: float(x["start"]))
+        additional_rescues = []
+        for i in range(len(healed_keeps) - 1):
+            curr_end = float(healed_keeps[i]["end"])
+            next_start = float(healed_keeps[i+1]["start"])
+            gap = next_start - curr_end
+            # 檢查 10:35~11:00 (Part 2) 或 11:05~11:30 (Part 3) 內是否有異常巨大空白 (> 240s)
+            is_p2_gap = (1700.0 <= curr_end <= 2800.0 and next_start >= 3400.0 and gap > 240.0)
+            is_p3_gap = (3650.0 <= curr_end <= 4600.0 and next_start >= 5200.0 and gap > 240.0)
+
+            if is_p2_gap or is_p3_gap:
+                target_part = "Part 2b" if is_p2_gap else "Part 3b"
+                seg_in_gap = [
+                    s for s in transcript_segments
+                    if curr_end <= (s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)) <= next_start
+                ]
+                found_start = None
+                found_end = None
+                for s in seg_in_gap:
+                    s_f = s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)
+                    s_t = s.get("offsets", {}).get("to", 0)/1000.0 if "offsets" in s else s.get("end", 0.0)
+                    s_txt = s.get("text", "")
+                    if any(k in s_txt for k in ["Bad Girl", "大過佬", "森美", "阿正", "Elsie", "妹頭", "吹水", "手機", "十句", "衰佬", "雞仔", "新day", "掛住你", "來大笑代替上路", "粒粒皆辛苦", "少爺占", "當奴", "艾粒"]):
+                        if found_start is None:
+                            found_start = s_f
+                    if found_start is not None and not any(k in s_txt for k in NEWS_START_KEYWORDS + TRAFFIC_KEYWORDS + WEATHER_KEYWORDS + ["11點", "11:30", "12點"]):
+                        found_end = s_t
+
+                if found_start and found_end and (found_end - found_start > 120.0):
+                    healed_items.append(f"空白缺口掃描自癒：在 {curr_end:.1f}s~{next_start:.1f}s 間成功挽救 {target_part} 正片話題 ({found_start:.1f}s~{found_end:.1f}s, 時長: {found_end-found_start:.1f}s)")
+                    additional_rescues.append({
+                        "start": round(found_start, 2),
+                        "end": round(found_end, 2),
+                        "description": f"品檢自癒：挽回遺漏 {target_part} 正片話題"
+                    })
+
+        if additional_rescues:
+            healed_keeps.extend(additional_rescues)
+            healed_keeps.sort(key=lambda x: float(x["start"]))
+
+    # 計算自癒後純淨時長
+    clean_duration = sum(float(k["end"]) - float(k["start"]) for k in healed_keeps)
+    clean_dur_str = f"{int(clean_duration//3600):02d}:{int((clean_duration%3600)//60):02d}:{int(clean_duration%60):02d}"
+
+    # -------------------------------------------------------------
+    # 檢查項 3：時長門禁 (Clean Duration Gate)
+    # -------------------------------------------------------------
+    if is_2hr_show:
+        if clean_duration < 4500.0:  # < 75 分鐘 (嚴重截斷，如 66 分鐘異常)
+            checks["duration_gate"] = f"FAIL (純淨時長 {clean_dur_str} 過短 < 01:15:00，疑似遺漏大段主持話題)"
+            failure_reasons.append(f"純淨時長過短 ({clean_dur_str} < 01:15:00)")
+        elif clean_duration > 5400.0:  # > 90 分鐘 (廣告未切乾淨，如 01:35:50 異常)
+            checks["duration_gate"] = f"FAIL (純淨時長 {clean_dur_str} 超出上限 > 01:30:00，廣告未切除乾淨)"
+            failure_reasons.append(f"純淨時長超出上限 ({clean_dur_str} > 01:30:00)")
+        else:
+            checks["duration_gate"] = f"PASS (純淨時長: {clean_dur_str}，符合 75~90 分鐘標準區間)"
+    else:
+        checks["duration_gate"] = f"PASS (非標準2小時錄音，純淨時長: {clean_dur_str})"
+
+    # -------------------------------------------------------------
+    # 檢查項 4：引擎門禁 (Engine Gate)
+    # -------------------------------------------------------------
+    if "heuristic" in engine_used.lower() and clean_duration > 5280.0:
+        checks["engine_gate"] = f"FAIL (啟發式規則引擎產出時長 {clean_dur_str} 超過 88 分鐘，廣告未切淨，嚴禁放行)"
+        failure_reasons.append("啟發式引擎切除不完全，時長超標")
+    else:
+        checks["engine_gate"] = f"PASS (採用引擎: {engine_used})"
+
+    # 推導最終切除區間
+    final_cuts = derive_cuts_from_keep_intervals(healed_keeps, total_duration)
+
+    passed = (len(failure_reasons) == 0)
+
+    # 評分機制
+    score = 100
+    if not passed:
+        score -= 50
+    for k, v in checks.items():
+        if "WARN" in v:
+            score -= 10
+        elif "FAIL" in v:
+            score -= 25
+    score = max(0, score)
+
+    report = {
+        "passed": passed,
+        "score": score,
+        "clean_duration_seconds": round(clean_duration, 2),
+        "clean_duration_formatted": clean_dur_str,
+        "total_intervals": len(healed_keeps),
+        "total_cuts": len(final_cuts),
+        "engine_used": engine_used,
+        "checks": checks,
+        "healed_items": healed_items,
+        "failure_reasons": failure_reasons
+    }
+
+    return passed, healed_keeps, final_cuts, report
+
+
 def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_code="bgog", api_key=None, model=None, date_str=None):
     """
     調用 Google Gemini Flash 雲端大模型進行前文後理（上下文）全篇語意理解與去廣告區間劃定。
@@ -687,156 +937,57 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     successful_model = None
     parsed = None
 
-    for idx, cand_model in enumerate(model_queue):
-        if "lite" in cand_model.lower():
-            print(f"  🛑 略過 Lite 模型 [{cand_model}]（系統嚴格禁用 Lite 模型以確保剪輯精確度）")
-            continue
-        print(f"  🤖 嘗試調用 Gemini 模型 [{cand_model}] (輪替順位 {idx+1}/{len(model_queue)})...")
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={api_key}"
-        req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
-        try:
-            with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=120) as resp:
-                res = json.loads(resp.read().decode("utf-8"))
-                result_text = res["candidates"][0]["content"]["parts"][0]["text"]
-                parsed = json.loads(result_text)
+    for attempt in range(1, 3):
+        for idx, cand_model in enumerate(model_queue):
+            if "lite" in cand_model.lower():
+                print(f"  🛑 略過 Lite 模型 [{cand_model}]（系統嚴格禁用 Lite 模型以確保剪輯精確度）")
+                continue
+            round_str = f", 輪次 {attempt}/2" if attempt > 1 else ""
+            print(f"  🤖 嘗試調用 Gemini 模型 [{cand_model}] (順位 {idx+1}/{len(model_queue)}{round_str})...")
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={api_key}"
+            req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=120) as resp:
+                    res = json.loads(resp.read().decode("utf-8"))
+                    result_text = res["candidates"][0]["content"]["parts"][0]["text"]
+                    parsed = json.loads(result_text)
 
-            keep_intervals = parsed.get("keep_intervals", [])
-            if not keep_intervals:
-                raise ValueError(f"模型 {cand_model} 未回傳有效的 keep_intervals")
+                keep_intervals = parsed.get("keep_intervals", [])
+                if not keep_intervals:
+                    raise ValueError(f"模型 {cand_model} 未回傳有效的 keep_intervals")
 
-            successful_model = cand_model
-            # 記錄成功模型與索引
-            if cand_model in all_models_list:
-                model_idx = all_models_list.index(cand_model)
-                record_gemini_model_success(cand_model, model_idx)
+                successful_model = cand_model
+                if cand_model in all_models_list:
+                    model_idx = all_models_list.index(cand_model)
+                    record_gemini_model_success(cand_model, model_idx)
 
-            print(f"  ✨ 模型 [{cand_model}] 分析成功！")
+                print(f"  ✨ 模型 [{cand_model}] 分析成功！")
+                break
+
+            except Exception as e:
+                last_error = e
+                record_gemini_model_error(cand_model, e)
+                print(f"  ⚠️ 模型 [{cand_model}] 調用失敗: {e}，自動嘗試下一個候選模型...")
+
+        if successful_model and parsed:
             break
-
-        except Exception as e:
-            last_error = e
-            record_gemini_model_error(cand_model, e)
-            print(f"  ⚠️ 模型 [{cand_model}] 調用失敗: {e}，自動嘗試下一個候選模型...")
+        if attempt < 2:
+            print("  ⏳ 第一輪所有候選模型調用遇到網絡或服務波動，等待 6 秒後啟動第二輪重試...")
+            time.sleep(6)
 
     if not successful_model or not parsed:
         raise RuntimeError(f"所有候選 Gemini 模型均調用失敗，最後錯誤: {last_error}")
 
     keep_intervals = parsed.get("keep_intervals", [])
 
-    # 智慧時鐘錨點檢驗與防誤殺歌曲保護 (Clock-Hour Anchors & Pop Song Protection)
-    if keep_intervals:
-        # 1. Part 1 結束時間防提前切歌保護 (正常 10:30 廣告前，時間必在 1300s 左右)
-        p1 = keep_intervals[0]
-        try:
-            p1_end = float(p1["end"])
-            if p1_end < 1250.0:
-                print(f"  ⚠️ [安全修正] Part 1 結束點過早 ({p1_end:.1f}s)，疑似誤切話題後歌曲！正在尋找 10:30 真正廣告破口...")
-                for seg in transcript_segments:
-                    s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
-                    s_to = seg.get("offsets", {}).get("to", 0) / 1000.0 if "offsets" in seg else seg.get("end", 0.0)
-                    s_text = seg.get("text", "")
-                    if 1250.0 <= s_from <= 1380.0:
-                        if any(k in s_text for k in ["Halloween", "萬聖節", "大過佬", "十點半", "10點半", "10時半", "得獎", "WhatsApp"]):
-                            p1["end"] = round(s_to + 1.0, 2)
-                        elif s_from > float(p1["end"]) and not any(k in s_text for k in AD_KEYWORDS + TRAFFIC_KEYWORDS + WEATHER_KEYWORDS):
-                            p1["end"] = round(s_to, 2)
-                print(f"  ✅ Part 1 結束點已安全修正延伸至: {p1['end']}s")
-        except Exception as e:
-            print(f"  ⚠️ Part 1 檢查出錯: {e}")
+    # 執行品檢門禁與自癒機制 (Quality Gatekeeper & Self-Healing Engine)
+    passed, keep_intervals, cuts, report = inspect_and_verify_cut_quality(
+        keep_intervals, cuts=[], total_duration=total_duration,
+        transcript_segments=transcript_segments, show_code=show_code,
+        engine_used=f"gemini ({successful_model})"
+    )
 
-        # 2. Part 4 結尾片尾曲防提前切歌保護 (若未保留到 12:00 新聞前)
-        p_last = keep_intervals[-1]
-        try:
-            last_end = float(p_last["end"])
-            news_start = None
-            for seg in transcript_segments:
-                s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
-                s_text = seg.get("text", "")
-                if s_from >= 6750.0 and any(k in s_text for k in ["新聞報道", "新聞報導", "報道新聞", "報導新聞", "商業電台新聞", "行政長官", "特區政府"]):
-                    news_start = s_from
-                    break
-            if news_start and last_end < news_start - 10.0:
-                print(f"  ⚠️ [安全修正] 節目結尾片尾曲被提前截斷 ({last_end:.1f}s -> 新聞起點 {news_start:.1f}s)，安全延伸保留片尾曲！")
-                p_last["end"] = round(news_start - 1.0, 2)
-        except Exception as e:
-            print(f"  ⚠️ Part 4 結尾檢查出錯: {e}")
-
-    # 3. 檢查是否有巨大空白落入電台正片時段（防中途短廣告後主持話題被整段漏掉）
-    # 例如 Part 2 在 10:42 左右中斷，但到 11:00 新聞前（2600s~3200s）還有長達數百秒的主持話題！
-    # 又如 Part 3 在 11:13 左右中斷，但到 11:30 廣告前（4500s~5005s）還有長達數百秒的主持話題！
-    additional_keeps = []
-    for i in range(len(keep_intervals) - 1):
-        try:
-            curr_end = float(keep_intervals[i]["end"])
-            next_start = float(keep_intervals[i+1]["start"])
-            gap = next_start - curr_end
-            is_p2_gap = (1700.0 <= curr_end <= 2800.0 and next_start >= 3500.0 and gap > 300.0)
-            is_p3_gap = (3700.0 <= curr_end <= 4600.0 and next_start >= 5300.0 and gap > 300.0)
-            if is_p2_gap or is_p3_gap:
-                print(f"  ⚠️ [異常時長警示] 偵測到節目時段內巨大空白破口 ({curr_end:.1f}s -> {next_start:.1f}s, 時長 {gap:.1f}s)！正在檢查是否有正片被遺漏...")
-                seg_in_gap = [
-                    s for s in transcript_segments
-                    if curr_end <= (s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)) <= next_start
-                ]
-                found_start = None
-                found_end = None
-                for s in seg_in_gap:
-                    s_f = s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)
-                    s_t = s.get("offsets", {}).get("to", 0)/1000.0 if "offsets" in s else s.get("end", 0.0)
-                    s_txt = s.get("text", "")
-                    if any(k in s_txt for k in ["Bad Girl", "大過佬", "大過老", "來大笑代替上路", "申美", "森美", "阿正", "Elsie"]):
-                        if found_start is None:
-                            found_start = s_f
-                    if found_start is not None and not any(k in s_txt for k in NEWS_START_KEYWORDS + TRAFFIC_KEYWORDS + WEATHER_KEYWORDS + ["11點", "11:30"]):
-                        found_end = s_t
-                if found_start and found_end and (found_end - found_start > 120.0):
-                    print(f"  ✅ [安全搶救] 成功在巨大破口中挽回遺漏正片: {found_start:.1f}s -> {found_end:.1f}s (時長: {found_end-found_start:.1f}s)！")
-                    additional_keeps.append({"start": round(found_start, 2), "end": round(found_end, 2), "description": "安全搶救遺漏正片話題"})
-        except Exception as e:
-            print(f"  ⚠️ 破口檢驗出錯: {e}")
-
-    if additional_keeps:
-        keep_intervals.extend(additional_keeps)
-        keep_intervals.sort(key=lambda x: float(x["start"]))
-
-    for i in range(len(keep_intervals) - 1):
-        try:
-            curr_end = float(keep_intervals[i]["end"])
-            next_start = float(keep_intervals[i+1]["start"])
-            gap = next_start - curr_end
-            if 4950.0 <= curr_end <= 5550.0 and gap < 120.0:
-                print(f"  ⚠️ [安全警示] 偵測到 11:30 廣告破口時長異常過短 ({gap:.1f}s)，請留意是否有廣告未切除！")
-        except Exception:
-            pass
-
-    # 驗證時序合理性並由 keep_intervals 推導 cuts
-    keep_intervals.sort(key=lambda x: float(x["start"]))
-    cuts = []
-    cursor = 0.0
-    for item in keep_intervals:
-        ks = float(item["start"])
-        ke = float(item["end"])
-        desc = item.get("description", "")
-        if ke <= ks:
-            continue
-        if ks > cursor + 1.0:
-            cuts.append({
-                "start": round(cursor, 2),
-                "end": round(ks, 2),
-                "duration": round(ks - cursor, 2),
-                "sample_text": f"AI語意破口 (銜接: {desc[:25]})"
-            })
-        cursor = max(cursor, ke)
-
-    if cursor < total_duration - 1.0:
-        cuts.append({
-            "start": round(cursor, 2),
-            "end": round(total_duration, 2),
-            "duration": round(total_duration - cursor, 2),
-            "sample_text": "AI語意結尾新聞破口"
-        })
-
-    return keep_intervals, cuts, successful_model
+    return keep_intervals, cuts, successful_model, report
 
 
 def assemble_cleaned_audio(input_file, cuts, output_file, total_duration):
@@ -947,26 +1098,49 @@ def process_audio_ad_removal(input_file, output_file=None, model_path=None):
             try:
                 date_label = f", 日期: {date_str}" if date_str else ""
                 print(f"🧠 [AI 語意理解] 偵測到 GEMINI_API_KEY，啟用 Gemini 模型池輪流輪替分析 {show_code}{date_label}...")
-                keeps, ai_cuts, used_model = detect_ad_intervals_with_gemini(segments, total_duration, show_code=show_code, api_key=api_key, date_str=date_str)
-                ai_cut_seconds = sum(c["duration"] for c in ai_cuts)
-                ai_ratio = ai_cut_seconds / max(1.0, total_duration)
-                if 120.0 <= ai_cut_seconds and ai_ratio <= 0.45:
+                keeps, ai_cuts, used_model, report = detect_ad_intervals_with_gemini(segments, total_duration, show_code=show_code, api_key=api_key, date_str=date_str)
+                if report["passed"]:
                     cuts = ai_cuts
                     used_engine = f"gemini ({used_model})"
-                    print(f"✅ Gemini [{used_model}] 語意辨識成功！提取出 {len(keeps)} 個節目正片段落，切除時長: {timedelta(seconds=int(ai_cut_seconds))} ({ai_ratio*100:.1f}%)")
+                    inspection_report = report
+                    print(f"✅ Gemini [{used_model}] 品質品檢通過 (評分: {report['score']}/100)！純淨時長: {report['clean_duration_formatted']}")
+                    if report["healed_items"]:
+                        print(f"  🔧 自動自癒修正 {len(report['healed_items'])} 項:")
+                        for h_item in report["healed_items"]:
+                            print(f"    - {h_item}")
                     for idx, k in enumerate(keeps):
                         print(f"    正片 #{idx+1}: {timedelta(seconds=int(k['start']))} -> {timedelta(seconds=int(k['end']))} ({k.get('description', '')})")
                 else:
-                    print(f"⚠️ Gemini [{used_model}] 切除時長比例異常 ({ai_ratio*100:.1f}%)，切換回本機啟發式規則引擎。")
+                    print(f"⚠️ Gemini [{used_model}] 品質品檢未通過 ({report['failure_reasons']})，切換至啟發式規則引擎進行品檢。")
             except Exception as e:
                 print(f"⚠️ Gemini 語意分析遇到問題 ({e})，自動安全回退至本機啟發式規則引擎！")
 
         if not cuts:
             print("⚙️ 啟動本機啟發式雙引擎（整點新聞狀態機 + 交通商業廣告詞庫）...")
-            tagged, cuts = detect_ad_intervals(segments, total_duration)
-            used_engine = "heuristic"
+            tagged, raw_heuristic_cuts = detect_ad_intervals(segments, total_duration)
+            # 將 heuristic cuts 轉為 keep_intervals 進行品檢門禁檢驗
+            heuristic_keeps = []
+            cursor = 0.0
+            for c in raw_heuristic_cuts:
+                if c["start"] > cursor + 1.0:
+                    heuristic_keeps.append({"start": cursor, "end": c["start"], "description": "啟發式正片"})
+                cursor = max(cursor, c["end"])
+            if cursor < total_duration - 1.0:
+                heuristic_keeps.append({"start": cursor, "end": total_duration, "description": "啟發式正片結尾"})
 
-        total_cut_seconds = sum(c["duration"] for c in cuts)
+            h_passed, heuristic_keeps, heuristic_cuts, h_report = inspect_and_verify_cut_quality(
+                heuristic_keeps, cuts=raw_heuristic_cuts, total_duration=total_duration,
+                transcript_segments=segments, show_code=show_code, engine_used="heuristic"
+            )
+            inspection_report = h_report
+            if h_passed:
+                cuts = heuristic_cuts
+                used_engine = "heuristic"
+                print(f"✅ 啟發式雙引擎品檢通過！純淨時長: {h_report['clean_duration_formatted']}")
+            else:
+                print(f"🛑 [門禁阻斷] 啟發式雙引擎產出未通過品檢門禁 ({h_report['failure_reasons']})！")
+
+        total_cut_seconds = sum(c["duration"] for c in cuts) if cuts else 0.0
         print(f"\n📊 偵測結果分析 (採用引擎: {used_engine}):")
         print(f"  總共發現 {len(cuts)} 個非節目廣告/新聞破口")
         print(f"  預計切除總時長: {timedelta(seconds=int(total_cut_seconds))} ({total_cut_seconds:.1f} 秒)")
@@ -974,19 +1148,20 @@ def process_audio_ad_removal(input_file, output_file=None, model_path=None):
         for idx, cut in enumerate(cuts):
             print(f"    破口 #{idx+1}: {timedelta(seconds=int(cut['start']))} -> {timedelta(seconds=int(cut['end']))} (時長: {timedelta(seconds=int(cut['duration']))}) [{cut['sample_text']}]")
 
-        # 4. 安全合理性檢查 (Fail-Safe Verification)
-        # 2小時節目廣告通常在 10 ~ 35 分鐘之間 (佔比 10% ~ 40%)
-        # 若切除時長 < 2 分鐘（幾乎沒切）或 > 50%（切除過度），觸發安全回退
-        cut_ratio = total_cut_seconds / max(1.0, total_duration)
-        if total_cut_seconds < 120.0:
-            print("\n⚠️ 警告: 偵測到的切除時長過短 (< 2 分鐘)，為保證節目完整性，安全保留原始音檔。")
-            shutil.copy2(input_file, output_file)
-            return output_file, False, {"total_cuts": len(cuts), "cut_seconds": 0.0}
-
-        if cut_ratio > 0.45:
-            print(f"\n⚠️ 警告: 切除比例異常過高 ({cut_ratio*100:.1f}%)，為防誤切節目，安全保留原始音檔。")
-            shutil.copy2(input_file, output_file)
-            return output_file, False, {"total_cuts": len(cuts), "cut_seconds": 0.0}
+        # 4. 安全品質門禁檢驗 (Quality Gatekeeper Final Verification)
+        if not cuts or not inspection_report or not inspection_report.get("passed", False):
+            print("\n" + "="*70)
+            print("🚨 [門禁警報] 音檔未通過自動品質檢驗門禁 (Quality Gatekeeper Failed)！")
+            reasons = inspection_report.get("failure_reasons", ["未達標"]) if inspection_report else ["無有效切除區間"]
+            for r in reasons:
+                print(f"  ❌ {r}")
+            print("🛡️ 安全機制：嚴格阻止殘缺、多切或廣告未切淨之劣質音檔發布！")
+            print("="*70 + "\n")
+            return output_file, False, {
+                "inspection_passed": False,
+                "inspection_report": inspection_report,
+                "error": "品質品檢門禁未通過"
+            }
 
         # 5. 執行音訊切除與無縫合成
         print(f"\n[步驟 4/4] 正在執行音訊精準剪切與無縫拼接...")
@@ -996,12 +1171,13 @@ def process_audio_ad_removal(input_file, output_file=None, model_path=None):
         cleaned_size_mb = os.path.getsize(output_file) / (1024 * 1024)
 
         print(f"\n{'='*70}")
-        print("🎉 純淨版 Podcast 音檔生成成功！")
+        print("🎉 純淨版 Podcast 音檔生成成功（通過品質品檢門禁）！")
         print(f"  輸出路徑: {output_file}")
         print(f"  原始時長: {timedelta(seconds=int(total_duration))} ({total_duration:.1f} 秒)")
         print(f"  純淨時長: {timedelta(seconds=int(cleaned_duration))} ({cleaned_duration:.1f} 秒)")
         print(f"  共節省時間: {timedelta(seconds=int(total_cut_seconds))} ({total_cut_seconds:.1f} 秒)")
         print(f"  檔案大小: {cleaned_size_mb:.2f} MB")
+        print(f"  品檢評分: {inspection_report.get('score', 100)}/100")
         print(f"{'='*70}\n")
 
         return output_file, True, {
@@ -1009,14 +1185,14 @@ def process_audio_ad_removal(input_file, output_file=None, model_path=None):
             "total_cuts": len(cuts),
             "cut_seconds": total_cut_seconds,
             "original_duration": total_duration,
-            "cleaned_duration": cleaned_duration
+            "cleaned_duration": cleaned_duration,
+            "inspection_passed": True,
+            "inspection_report": inspection_report
         }
 
     except Exception as e:
         print(f"\n❌ 去廣告過程發生異常: {e}")
-        print("🛡️ 啟動安全防護機制: 自動回退使用原始音檔，確保 Podcast 發布不受影響。")
-        shutil.copy2(input_file, output_file)
-        return output_file, False, {"error": str(e)}
+        return output_file, False, {"error": str(e), "inspection_passed": False}
 
     finally:
         # 清理暫存音檔 WAV

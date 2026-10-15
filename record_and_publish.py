@@ -450,8 +450,8 @@ def main():
                 output_file=cleaned_output_path,
                 model_path=args.whisper_model
             )
-            if is_cleaned and os.path.exists(final_path):
-                # 替換為純淨版音檔進行後續發布
+            if is_cleaned and stats.get("inspection_passed", False) and os.path.exists(final_path):
+                # 替換為經品質品檢認證的純淨版音檔進行後續發布
                 output_path = final_path
                 file_size = os.path.getsize(output_path)
                 dur_sec = int(get_audio_duration(output_path))
@@ -459,11 +459,17 @@ def main():
                 dur_m = (dur_sec % 3600) // 60
                 dur_s = dur_sec % 60
                 show_cfg["itunes_duration"] = f"{dur_h:02d}:{dur_m:02d}:{dur_s:02d}"
-                print(f"[{datetime.now()}] 去廣告完成！更新 Podcast 實際節目時長為: {show_cfg['itunes_duration']}")
+                print(f"[{datetime.now()}] ✅ 去廣告與品質品檢全數通過 (評分: {stats.get('inspection_report', {}).get('score', 100)}/100)！更新 Podcast 實際節目時長為: {show_cfg['itunes_duration']}")
             else:
-                print(f"[{datetime.now()}] 未產出純淨版音檔或觸發安全回退，使用原始音檔繼續發布。")
+                inspection_report = stats.get("inspection_report", {})
+                reasons = inspection_report.get("failure_reasons", ["未通過品質門禁檢驗"])
+                err_msg = f"🛑 [安全熔斷] 今日音檔未能通過自動品質門禁自我檢驗 ({reasons})！為防止破音/殘缺/多剪/歌曲遺漏節目發布至 Podcast，已啟動安全熔斷，中止本次自動發布！"
+                print(f"[{datetime.now()}] {err_msg}")
+                if not args.dry_run:
+                    raise RuntimeError(err_msg)
         except Exception as e:
-            print(f"[{datetime.now()}] ⚠️ 自動去廣告發生異常: {e}，安全保留原始音檔繼續發布。")
+            print(f"[{datetime.now()}] ⚠️ 自動去廣告或品質品檢發生異常: {e}")
+            raise
 
     if args.dry_run:
         print(f"[DRY-RUN] 測試模式完成，產出音檔: {output_path}")
