@@ -113,7 +113,9 @@ def record_stream(m3u8_url, duration, output_file, headers_str=None):
 
     cmd = [
         ffmpeg_bin,
-        "-y"
+        "-y",
+        "-loglevel", "warning",
+        "-nostats"
     ]
     if headers_str:
         cmd.extend(["-headers", headers_str])
@@ -211,9 +213,14 @@ def update_rss(rss_file_path, show_name, date_str, date_obj, download_url, file_
     formatted_date = date_obj.strftime("%Y-%m-%d")
     enclosure_mime = "audio/x-m4a" if download_url.endswith(".m4a") else ("audio/mpeg" if download_url.endswith(".mp3") else "audio/aac")
 
+    chapters_summary = show_cfg.get("chapters_summary", "").strip()
+    desc_block = ""
+    if chapters_summary:
+        desc_block = f"      <description><![CDATA[📻 {formatted_date} {show_name} 節目章節時間軸：\n{chapters_summary}]]></description>\n"
+
     new_item = f"""    <item>
       <title>{formatted_date} {show_name}</title>
-      <pubDate>{pub_date}</pubDate>
+{desc_block}      <pubDate>{pub_date}</pubDate>
       <guid isPermaLink="false">{guid}</guid>
       <enclosure url="{download_url}" length="{file_size}" type="{enclosure_mime}" />
       <itunes:duration>{show_cfg['itunes_duration']}</itunes:duration>
@@ -459,6 +466,7 @@ def main():
                 dur_m = (dur_sec % 3600) // 60
                 dur_s = dur_sec % 60
                 show_cfg["itunes_duration"] = f"{dur_h:02d}:{dur_m:02d}:{dur_s:02d}"
+                show_cfg["chapters_summary"] = stats.get("chapters_summary", "")
                 print(f"[{datetime.now()}] ✅ 去廣告與品質品檢全數通過 (評分: {stats.get('inspection_report', {}).get('score', 100)}/100)！更新 Podcast 實際節目時長為: {show_cfg['itunes_duration']}")
             else:
                 inspection_report = stats.get("inspection_report", {})
