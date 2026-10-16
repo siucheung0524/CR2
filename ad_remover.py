@@ -1256,8 +1256,8 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     return keep_intervals, cuts, successful_model, report
 
 
-def assemble_cleaned_audio(input_file, cuts, output_file, total_duration, keep_metadata=None):
-    """根據切除區間，調用 FFmpeg 進行精準無損無縫拼接（含 120ms 微淡入淡出防爆音與原生 M4A 章節標記）"""
+def assemble_cleaned_audio(input_file, cuts, output_file, total_duration, keep_metadata=None, clean_chapter_titles=None):
+    """根據切除區間，調用 FFmpeg 進行精準無損無縫拼接（含 120ms 微淡入淡出防爆音與原生 M4A 乾淨章節標記）"""
     if not cuts:
         print("未偵測到需要切除的廣告區間，直接複製音訊。")
         shutil.copy2(input_file, output_file)
@@ -1273,20 +1273,23 @@ def assemble_cleaned_audio(input_file, cuts, output_file, total_duration, keep_m
     if cursor < total_duration - 0.5:
         keep_intervals.append((cursor, total_duration))
 
-    # 對應每個保留段落的描述名稱 (供 M4A 章節與 Podcast Show Notes 使用)
+    # 對應每個保留段落的乾淨章節名稱 (供 M4A 章節與播放器展示)
     chapter_entries = []
     out_cursor = 0.0
     print(f"\n✂️ 將保留以下 {len(keep_intervals)} 個精華內容段落:")
     for idx, (ks, ke) in enumerate(keep_intervals):
         seg_dur = max(0.1, ke - ks)
-        desc = f"Part {idx+1}"
-        if keep_metadata:
-            # 尋找最匹配的 keep_metadata 描述
+        desc = f"第 {idx+1} 節"
+        if clean_chapter_titles and idx < len(clean_chapter_titles):
+            desc = clean_chapter_titles[idx]
+        elif keep_metadata:
+            # 尋找最匹配的 keep_metadata 描述並清洗機器詞彙
             for km in keep_metadata:
                 if abs(float(km.get("start", -999)) - ks) < 5.0 or abs(float(km.get("end", -999)) - ke) < 5.0:
                     raw_desc = str(km.get("description", "")).strip()
                     if raw_desc:
-                        desc = raw_desc
+                        from generate_human_shownotes import sanitize_chapter_title
+                        desc = sanitize_chapter_title(raw_desc, idx+1)
                     break
         out_start = out_cursor
         out_end = out_cursor + seg_dur
@@ -1492,19 +1495,39 @@ def process_audio_ad_removal(input_file, output_file=None, model_path=None):
                 "error": "品質品檢門禁未通過"
             }
 
-        # 5. 執行音訊切除與無縫合成（嵌入 M4A 章節與微淡入淡出）
-        print(f"\n[步驟 4/4] 正在執行音訊精準剪切與無縫拼接...")
-        chapter_entries = assemble_cleaned_audio(input_file, cuts, output_file, total_duration, keep_metadata=final_keeps)
+        # 5. 生成專業、生動、分節明確的官方節目簡介 (Human Editorial Show Notes & Clean Chapter Titles)
+        keep_ranges = [(float(k["start"]), float(k["end"])) for k in final_keeps]
+        clean_chapter_titles = None
+        editorial_notes = None
+        try:
+            from generate_human_shownotes import generate_editorial_shownotes
+            print(f"\n[步驟 4/5] 正在為 {show_code} 生成人性化、分節清晰的專業官方節目簡介...")
+            full_show_name = "聖艾粒LaLaLaLa" if show_code == "ilub" else "Bad Girl 大過佬"
+            full_date_str = f"{date_match.group(1)}-{date_match.group(2)}-{date_match.group(3)}" if date_match else "今日"
+            editorial_notes, clean_chapter_titles = generate_editorial_shownotes(
+                f"{transcript_base}.json",
+                keep_ranges,
+                show_name=full_show_name,
+                date_str=full_date_str
+            )
+        except Exception as err:
+            print(f"  ⚠️ 生成官方節目簡介略過: {err}")
 
-        # 產生 Podcast Show Notes 章節時間軸摘要
-        chapters_lines = []
-        for ch in chapter_entries:
-            s_sec = int(ch["out_start"])
-            m_part, s_part = divmod(s_sec, 60)
-            h_part, m_part = divmod(m_part, 60)
-            ts_str = f"{h_part:02d}:{m_part:02d}:{s_part:02d}" if h_part > 0 else f"{m_part:02d}:{s_part:02d}"
-            chapters_lines.append(f"{ts_str} - {ch['title']}")
-        chapters_summary = "\n".join(chapters_lines)
+        # 6. 執行音訊切除與無縫合成（嵌入 M4A 乾淨章節與微淡入淡出）
+        print(f"\n[步驟 5/5] 正在執行音訊精準剪切與無縫拼接（嵌入乾淨章節名稱）...")
+        chapter_entries = assemble_cleaned_audio(
+            input_file, cuts, output_file, total_duration,
+            keep_metadata=final_keeps, clean_chapter_titles=clean_chapter_titles
+        )
+
+        # 產生 Podcast Show Notes（優先採用專業官方人寫風格簡介）
+        if editorial_notes:
+            chapters_summary = editorial_notes
+        else:
+            chapters_lines = []
+            for ch in chapter_entries:
+                chapters_lines.append(f"【{ch['title']}】")
+            chapters_summary = "\n".join(chapters_lines)
 
         cleaned_duration = get_audio_duration(output_file)
         cleaned_size_mb = os.path.getsize(output_file) / (1024 * 1024)

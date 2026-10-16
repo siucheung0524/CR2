@@ -216,7 +216,7 @@ def update_rss(rss_file_path, show_name, date_str, date_obj, download_url, file_
     chapters_summary = show_cfg.get("chapters_summary", "").strip()
     desc_block = ""
     if chapters_summary:
-        desc_block = f"      <description><![CDATA[📻 {formatted_date} {show_name} 節目章節時間軸：\n{chapters_summary}]]></description>\n"
+        desc_block = f"      <description><![CDATA[{chapters_summary}]]></description>\n"
 
     new_item = f"""    <item>
       <title>{formatted_date} {show_name}</title>
