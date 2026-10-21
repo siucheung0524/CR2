@@ -1246,6 +1246,9 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
         model_queue, _, _ = get_next_gemini_models_sequence()
 
     all_models_list = get_gemini_model_candidates()
+    all_keys = get_gemini_api_keys()
+    if not all_keys:
+        all_keys = [api_key] if api_key else []
     last_error = None
     successful_model = None
     parsed = None
@@ -1256,34 +1259,43 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
                 print(f"  🛑 略過 Lite 模型 [{cand_model}]（系統嚴格禁用 Lite 模型以確保剪輯精確度）")
                 continue
             round_str = f", 輪次 {attempt}/2" if attempt > 1 else ""
-            print(f"  🤖 嘗試調用 Gemini 模型 [{cand_model}] (順位 {idx+1}/{len(model_queue)}{round_str})...")
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={api_key}"
-            req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
-            try:
-                with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=120) as resp:
-                    res = json.loads(resp.read().decode("utf-8"))
-                    result_text = res["candidates"][0]["content"]["parts"][0]["text"]
-                    parsed = json.loads(result_text)
 
-                keep_intervals = parsed.get("keep_intervals", [])
-                if not keep_intervals:
-                    raise ValueError(f"模型 {cand_model} 未回傳有效的 keep_intervals")
+            # 支援多組 API Keys 自動輪替容錯（遇 429 配額用盡自動換 Key）
+            for k_idx, cur_key in enumerate(all_keys):
+                key_tag = f" (Key #{k_idx+1})" if len(all_keys) > 1 else ""
+                print(f"  🤖 嘗試調用 Gemini 模型 [{cand_model}]{key_tag} (順位 {idx+1}/{len(model_queue)}{round_str})...")
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={cur_key}"
+                req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
+                try:
+                    with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=120) as resp:
+                        res = json.loads(resp.read().decode("utf-8"))
+                        result_text = res["candidates"][0]["content"]["parts"][0]["text"]
+                        parsed = json.loads(result_text)
 
-                successful_model = cand_model
-                if cand_model in all_models_list:
-                    model_idx = all_models_list.index(cand_model)
-                    record_gemini_model_success(cand_model, model_idx)
+                    keep_intervals = parsed.get("keep_intervals", [])
+                    if not keep_intervals:
+                        raise ValueError(f"模型 {cand_model} 未回傳有效的 keep_intervals")
 
-                print(f"  ✨ 模型 [{cand_model}] 分析成功！")
+                    successful_model = cand_model
+                    if cand_model in all_models_list:
+                        model_idx = all_models_list.index(cand_model)
+                        record_gemini_model_success(cand_model, model_idx)
+
+                    print(f"  ✨ 模型 [{cand_model}]{key_tag} 分析成功！")
+                    break
+
+                except Exception as e:
+                    last_error = e
+                    record_gemini_model_error(cand_model, e)
+                    if "429" in str(e) or "quota" in str(e).lower() or "resource_exhausted" in str(e).lower():
+                        if k_idx + 1 < len(all_keys):
+                            print(f"  ⚠️ Key #{k_idx+1} 遇到配額限制 (429)，自動無縫切換至 Key #{k_idx+2} 重試...")
+                            continue
+                    print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 調用失敗: {e}，自動嘗試下一個候選模型/Key...")
+                    break
+
+            if successful_model and parsed:
                 break
-
-            except Exception as e:
-                last_error = e
-                record_gemini_model_error(cand_model, e)
-                print(f"  ⚠️ 模型 [{cand_model}] 調用失敗: {e}，自動嘗試下一個候選模型...")
-
-        if successful_model and parsed:
-            break
         if attempt < 2:
             print("  ⏳ 第一輪所有候選模型調用遇到網絡或服務波動，等待 6 秒後啟動第二輪重試...")
             time.sleep(6)

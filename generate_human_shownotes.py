@@ -10,17 +10,14 @@ from datetime import datetime
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+def get_gemini_api_keys():
+    from ad_remover import get_gemini_api_keys as remover_keys
+    return remover_keys()
+
+
 def get_gemini_api_key():
-    key = os.environ.get("GEMINI_API_KEY")
-    if not key:
-        env_file = os.path.join(SCRIPT_DIR, ".env")
-        if os.path.exists(env_file):
-            with open(env_file, "r") as f:
-                for line in f:
-                    if line.strip().startswith("GEMINI_API_KEY="):
-                        key = line.strip().split("=", 1)[1].strip()
-                        break
-    return key
+    keys = get_gemini_api_keys()
+    return keys[0] if keys else None
 
 def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, date_str):
     """
@@ -77,8 +74,8 @@ def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, d
     }
     req_data = json.dumps(payload).encode("utf-8")
 
-    api_key = get_gemini_api_key()
-    if not api_key:
+    all_keys = get_gemini_api_keys()
+    if not all_keys:
         return None, []
 
     SHOWNOTES_GEMINI_MODELS = [
@@ -91,17 +88,20 @@ def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, d
     shownotes_text = None
 
     for cand_model in SHOWNOTES_GEMINI_MODELS:
-        try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={api_key}"
-            req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
-                res = json.loads(resp.read().decode("utf-8"))
-                shownotes_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
-                if shownotes_text and "【第一節】" in shownotes_text:
-                    print(f"  ✨ 成功使用模型 [{cand_model}] 生成人性化節目簡介！(使用高配額 Lite 池，保護主模型 Quota)")
-                    break
-        except Exception as e:
-            print(f"  ⚠️ 模型 [{cand_model}] 生成簡介暫時繁忙: {e}")
+        for k_idx, cur_key in enumerate(all_keys):
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={cur_key}"
+                req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
+                    res = json.loads(resp.read().decode("utf-8"))
+                    shownotes_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    if shownotes_text and "【第一節】" in shownotes_text:
+                        print(f"  ✨ 成功使用模型 [{cand_model}] (Key #{k_idx+1}) 生成人性化節目簡介！(高配額 Lite 池)")
+                        break
+            except Exception as e:
+                print(f"  ⚠️ 模型 [{cand_model}] (Key #{k_idx+1}) 生成簡介暫時繁忙: {e}")
+        if shownotes_text:
+            break
 
     if not shownotes_text:
         return None, []
