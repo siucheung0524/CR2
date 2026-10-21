@@ -81,23 +81,24 @@ def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, d
     if not api_key:
         return None, []
 
-    from ad_remover import get_next_gemini_models_sequence
-    model_queue, _, _ = get_next_gemini_models_sequence()
+    SHOWNOTES_GEMINI_MODELS = [
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+        "gemini-flash-lite-latest"
+    ]
 
     ctx = ssl.create_default_context(cafile=certifi.where())
     shownotes_text = None
 
-    for cand_model in model_queue:
-        if "lite" in cand_model.lower():
-            continue
+    for cand_model in SHOWNOTES_GEMINI_MODELS:
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={api_key}"
             req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=60) as resp:
+            with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
                 res = json.loads(resp.read().decode("utf-8"))
                 shownotes_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
                 if shownotes_text and "【第一節】" in shownotes_text:
-                    print(f"  ✨ 成功使用模型 [{cand_model}] 生成人性化節目簡介！")
+                    print(f"  ✨ 成功使用模型 [{cand_model}] 生成人性化節目簡介！(使用高配額 Lite 池，保護主模型 Quota)")
                     break
         except Exception as e:
             print(f"  ⚠️ 模型 [{cand_model}] 生成簡介暫時繁忙: {e}")

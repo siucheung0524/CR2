@@ -30,6 +30,7 @@ except ImportError:
     certifi = None
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+RECORDINGS_DIR = os.path.join(SCRIPT_DIR, "recordings")
 FFMPEG_BIN = "/opt/homebrew/bin/ffmpeg" if os.path.exists("/opt/homebrew/bin/ffmpeg") else "ffmpeg"
 FFPROBE_BIN = "/opt/homebrew/bin/ffprobe" if os.path.exists("/opt/homebrew/bin/ffprobe") else "ffprobe"
 
@@ -441,23 +442,33 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
     return tagged, merged_cuts
 
 
-def get_gemini_api_key():
-    """從環境變數或 .env 檔案中取得 GEMINI_API_KEY"""
-    key = os.environ.get("GEMINI_API_KEY")
-    if key:
-        return key.strip()
+def get_gemini_api_keys():
+    """從環境變數或 .env 檔案中取得 GEMINI_API_KEYS（支援多 Key 逗號分隔負載均衡）"""
+    keys = []
+    env_keys = os.environ.get("GEMINI_API_KEYS") or os.environ.get("GEMINI_API_KEY")
+    if env_keys:
+        keys.extend([k.strip() for k in env_keys.split(",") if k.strip()])
     env_path = os.path.join(SCRIPT_DIR, ".env")
     if os.path.exists(env_path):
         try:
             with open(env_path, "r", encoding="utf-8") as f:
                 for line in f:
-                    if line.startswith("GEMINI_API_KEY="):
+                    line = line.strip()
+                    if line.startswith("GEMINI_API_KEY=") or line.startswith("GEMINI_API_KEYS="):
                         val = line.split("=", 1)[1].strip()
-                        if val:
-                            return val
+                        for k in val.split(","):
+                            k = k.strip()
+                            if k and k not in keys:
+                                keys.append(k)
         except Exception:
             pass
-    return None
+    return keys
+
+
+def get_gemini_api_key():
+    """取得主要使用的 Gemini API Key"""
+    keys = get_gemini_api_keys()
+    return keys[0] if keys else None
 
 
 # Whisper 常見音樂/靜音幻覺詞庫（統一轉換為 [音樂 / 流行歌曲播放中]）
@@ -468,13 +479,11 @@ HALLUCINATION_PATTERNS = [
     "中文字幕", "感謝觀看", "感谢观看", "謝謝觀看", "谢谢观看", "Amara.org"
 ]
 
-# 候選 Gemini 旗艦 Flash 模型池（嚴禁任何 Lite 模型，依穩定度排序並支援健康度感知輪替）
+# 候選 Gemini 旗艦 Flash 模型池（依配額健康度排序，排除 503 頻繁失效模型）
 DEFAULT_GEMINI_MODELS = [
-    "gemini-3.7-flash",
-    "gemini-3.5-flash",
+    "gemini-3-flash-preview",
     "gemini-flash-latest",
     "gemini-3.8-flash",
-    "gemini-3-flash-preview",
     "gemini-3.6-flash"
 ]
 GEMINI_STATE_FILE = os.path.join(SCRIPT_DIR, ".gemini_model_state.json")
@@ -487,21 +496,22 @@ def get_gemini_model_candidates():
         raw_models = [m.strip() for m in env_models.split(",") if m.strip()]
     else:
         raw_models = list(DEFAULT_GEMINI_MODELS)
-    # 嚴格禁制：任何包含 'lite' 的模型一律剔除，確保只有全尺寸上下文旗艦模型參與分析
     safe_models = [m for m in raw_models if "lite" not in m.lower()]
     return safe_models if safe_models else list(DEFAULT_GEMINI_MODELS)
 
 
 def get_next_gemini_models_sequence():
     """
-    實施健康度感知輪流輪替（Health-Aware Round-Robin）：
-    根據 .gemini_model_state.json 記錄的上次使用模型索引與連續失敗次數，
-    健康模型優先進行輪換，近期連續發生 503/Timeout 的模型自動降級排至隊尾，
-    兼顧 API Quota 均衡分配與極速成功響應。
+    實施健康度與每日配額感知輪替（Quota & Health Aware Ordering）：
+    1. 每日配額感知：當日請求數已逼近上限 (>= 15/20) 或曾遇 429 配額用盡之模型自動降級排至隊尾。
+    2. 健康度感知：近期連續 503/Timeout 錯誤之模型降級。
+    3. 配額充足且健康之模型優先調用。
     """
     models = get_gemini_model_candidates()
     last_idx = -1
     state = {}
+    today_str = time.strftime("%Y-%m-%d")
+
     if os.path.exists(GEMINI_STATE_FILE):
         try:
             with open(GEMINI_STATE_FILE, "r", encoding="utf-8") as f:
@@ -510,19 +520,28 @@ def get_next_gemini_models_sequence():
         except Exception:
             state = {}
 
+    daily_usage = state.get("daily_usage", {})
+    if state.get("daily_date") != today_str:
+        daily_usage = {}
+        state["daily_date"] = today_str
+        state["daily_usage"] = daily_usage
+
+    stats = state.get("stats", {})
     start_idx = (last_idx + 1) % len(models)
     ordered_sequence = models[start_idx:] + models[:start_idx]
-    stats = state.get("stats", {})
-    # 將近期連續錯誤 >= 2 次的模型排到健康模型之後
+
+    # 排序鍵：(是否逼近每日20次上限或遇到429, 是否連續錯誤>=2次, 今日已消耗請求數, 連續錯誤次數)
     ordered_sequence.sort(key=lambda m: (
+        daily_usage.get(m, 0) >= 15 or "429" in str(stats.get(m, {}).get("last_error", "")),
         stats.get(m, {}).get("consecutive_errors", 0) >= 2,
+        daily_usage.get(m, 0),
         stats.get(m, {}).get("consecutive_errors", 0)
     ))
     return ordered_sequence, start_idx, state
 
 
 def record_gemini_model_success(model_name, model_index):
-    """記錄本次成功使用的模型至持久化狀態檔（重置連續失敗計數）"""
+    """記錄本次成功使用的模型至持久化狀態檔（重置連續失敗計數並累計今日調用量）"""
     try:
         state = {}
         if os.path.exists(GEMINI_STATE_FILE):
@@ -531,6 +550,11 @@ def record_gemini_model_success(model_name, model_index):
                     state = json.load(f)
             except Exception:
                 state = {}
+        today_str = time.strftime("%Y-%m-%d")
+        if state.get("daily_date") != today_str:
+            state["daily_date"] = today_str
+            state["daily_usage"] = {}
+        state.setdefault("daily_usage", {})[model_name] = state["daily_usage"].get(model_name, 0) + 1
         state["last_used_model"] = model_name
         state["last_index"] = model_index
         state["last_success_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -545,7 +569,7 @@ def record_gemini_model_success(model_name, model_index):
 
 
 def record_gemini_model_error(model_name, err_msg):
-    """記錄模型調用錯誤統計與連續錯誤次數"""
+    """記錄模型調用錯誤統計、累計今日調用量與連續錯誤次數"""
     try:
         state = {}
         if os.path.exists(GEMINI_STATE_FILE):
@@ -554,6 +578,11 @@ def record_gemini_model_error(model_name, err_msg):
                     state = json.load(f)
             except Exception:
                 state = {}
+        today_str = time.strftime("%Y-%m-%d")
+        if state.get("daily_date") != today_str:
+            state["daily_date"] = today_str
+            state["daily_usage"] = {}
+        state.setdefault("daily_usage", {})[model_name] = state["daily_usage"].get(model_name, 0) + 1
         stats = state.setdefault("stats", {})
         m_stat = stats.setdefault(model_name, {"success": 0, "errors": 0, "consecutive_errors": 0})
         m_stat["errors"] += 1
@@ -1024,7 +1053,25 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
 
     weekdays_cn = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
     weekday_hint = ""
+    cache_file = None
     if date_str:
+        clean_date_tag = re.sub(r'[^0-9]', '', str(date_str))[:8]
+        if clean_date_tag:
+            cache_file = os.path.join(RECORDINGS_DIR, f"{show_code}-{clean_date_tag}_cuts_cache.json")
+            if os.path.exists(cache_file):
+                try:
+                    with open(cache_file, "r", encoding="utf-8") as cf:
+                        cached = json.load(cf)
+                    c_keeps = [tuple(k) for k in cached.get("keep_intervals", [])]
+                    c_cuts = cached.get("cuts", [])
+                    c_model = cached.get("model", "gemini-cached")
+                    c_report = cached.get("report", {})
+                    if c_keeps and c_report.get("score", 0) >= 80:
+                        print(f"⚡ [配額節省] 發現已驗證之高分去廣告快取 ({cache_file})！")
+                        print(f"   評分: {c_report.get('score')}/100, 純淨時長: {c_report.get('clean_dur_str')}，直接載入快取（消耗 0 次 Gemini API）")
+                        return c_keeps, c_cuts, f"{c_model} (cache)", c_report
+                except Exception as e:
+                    print(f"⚠️ 讀取去廣告快取失敗: {e}，將調用 Gemini 模型")
         try:
             clean_d = re.sub(r'[^0-9]', '', str(date_str))
             if len(clean_d) >= 8:
@@ -1252,6 +1299,20 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
         transcript_segments=transcript_segments, show_code=show_code,
         engine_used=f"gemini ({successful_model})"
     )
+
+    if cache_file and passed:
+        try:
+            with open(cache_file, "w", encoding="utf-8") as cf:
+                json.dump({
+                    "keep_intervals": keep_intervals,
+                    "cuts": cuts,
+                    "model": successful_model,
+                    "report": report,
+                    "saved_at": time.strftime("%Y-%m-%d %H:%M:%S")
+                }, cf, indent=2, ensure_ascii=False)
+            print(f"💾 已建立去廣告分析快取: {cache_file} (後續重跑將免消耗 API Quota)")
+        except Exception as e:
+            print(f"⚠️ 無法儲存去廣告快取: {e}")
 
     return keep_intervals, cuts, successful_model, report
 
