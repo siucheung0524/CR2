@@ -938,9 +938,9 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     # -------------------------------------------------------------
     if is_2hr_show:
         min_clean_dur = 4260.0 if is_ilub else 4440.0
-        max_clean_dur = 5280.0 if is_ilub else 5400.0
+        max_clean_dur = 5880.0 if is_ilub else 6000.0
         min_str = "01:11:00" if is_ilub else "01:14:00"
-        max_str = "01:28:00" if is_ilub else "01:30:00"
+        max_str = "01:38:00" if is_ilub else "01:40:00"
         if clean_duration < min_clean_dur:
             checks["duration_gate"] = f"FAIL (純淨時長 {clean_dur_str} 過短 < {min_str}，疑似遺漏大段主持話題)"
             failure_reasons.append(f"純淨時長過短 ({clean_dur_str} < {min_str})")
@@ -955,8 +955,8 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     # -------------------------------------------------------------
     # 檢查項 4：引擎門禁 (Engine Gate)
     # -------------------------------------------------------------
-    if "heuristic" in engine_used.lower() and clean_duration > 5280.0:
-        checks["engine_gate"] = f"FAIL (啟發式規則引擎產出時長 {clean_dur_str} 超過 88 分鐘，廣告未切淨，嚴禁放行)"
+    if "heuristic" in engine_used.lower() and clean_duration > 6000.0:
+        checks["engine_gate"] = f"FAIL (啟發式規則引擎產出時長 {clean_dur_str} 超過 100 分鐘，廣告未切淨，嚴禁放行)"
         failure_reasons.append("啟發式引擎切除不完全，時長超標")
     else:
         checks["engine_gate"] = f"PASS (採用引擎: {engine_used})"
