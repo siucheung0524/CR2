@@ -27,7 +27,7 @@ def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, d
     if not os.path.exists(transcript_json_path):
         return None, []
 
-    with open(transcript_json_path, "r", encoding="utf-8") as f:
+    with open(transcript_json_path, "r", encoding="utf-8", errors="replace") as f:
         data = json.load(f)
     segs = data.get("transcription", [])
     if not segs:
@@ -35,7 +35,15 @@ def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, d
 
     # 提取每一節的精華對話文字（過濾空白）
     section_texts = []
-    for idx, (ks, ke) in enumerate(keep_ranges):
+    for idx, item in enumerate(keep_ranges):
+        if isinstance(item, dict):
+            ks = float(item.get("start", 0.0))
+            ke = float(item.get("end", 0.0))
+        elif isinstance(item, (list, tuple)):
+            ks = float(item[0])
+            ke = float(item[1])
+        else:
+            continue
         cur_texts = []
         for s in segs:
             t0 = s.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in s else s.get("start", 0.0)

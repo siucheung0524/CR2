@@ -479,12 +479,12 @@ HALLUCINATION_PATTERNS = [
     "中文字幕", "感謝觀看", "感谢观看", "謝謝觀看", "谢谢观看", "Amara.org"
 ]
 
-# 候選 Gemini 旗艦 Flash 模型池（依配額健康度排序，排除 503 頻繁失效模型）
+# 候選 Gemini 旗艦 Flash 模型池（依穩定度與健康度排序，首選超快穩定的 gemini-3.5-flash）
 DEFAULT_GEMINI_MODELS = [
-    "gemini-3-flash-preview",
-    "gemini-flash-latest",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
     "gemini-3.8-flash",
-    "gemini-3.6-flash"
+    "gemini-flash-latest"
 ]
 GEMINI_STATE_FILE = os.path.join(SCRIPT_DIR, ".gemini_model_state.json")
 
@@ -1062,13 +1062,14 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
                 try:
                     with open(cache_file, "r", encoding="utf-8") as cf:
                         cached = json.load(cf)
-                    c_keeps = [tuple(k) for k in cached.get("keep_intervals", [])]
+                    c_keeps = cached.get("keep_intervals", [])
                     c_cuts = cached.get("cuts", [])
                     c_model = cached.get("model", "gemini-cached")
                     c_report = cached.get("report", {})
                     if c_keeps and c_report.get("score", 0) >= 80:
+                        dur_text = c_report.get("clean_duration_formatted") or c_report.get("clean_dur_str")
                         print(f"⚡ [配額節省] 發現已驗證之高分去廣告快取 ({cache_file})！")
-                        print(f"   評分: {c_report.get('score')}/100, 純淨時長: {c_report.get('clean_dur_str')}，直接載入快取（消耗 0 次 Gemini API）")
+                        print(f"   評分: {c_report.get('score')}/100, 純淨時長: {dur_text}，直接載入快取（消耗 0 次 Gemini API）")
                         return c_keeps, c_cuts, f"{c_model} (cache)", c_report
                 except Exception as e:
                     print(f"⚠️ 讀取去廣告快取失敗: {e}，將調用 Gemini 模型")
@@ -1260,14 +1261,14 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
                 continue
             round_str = f", 輪次 {attempt}/2" if attempt > 1 else ""
 
-            # 支援多組 API Keys 自動輪替容錯（遇 429 配額用盡自動換 Key）
+            # 支援多組 API Keys 自動輪替容錯（遇 429、503、Timeout 等錯誤自動換 Key 重試）
             for k_idx, cur_key in enumerate(all_keys):
                 key_tag = f" (Key #{k_idx+1})" if len(all_keys) > 1 else ""
                 print(f"  🤖 嘗試調用 Gemini 模型 [{cand_model}]{key_tag} (順位 {idx+1}/{len(model_queue)}{round_str})...")
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={cur_key}"
                 req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
                 try:
-                    with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=120) as resp:
+                    with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
                         res = json.loads(resp.read().decode("utf-8"))
                         result_text = res["candidates"][0]["content"]["parts"][0]["text"]
                         parsed = json.loads(result_text)
@@ -1287,15 +1288,17 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
                 except Exception as e:
                     last_error = e
                     record_gemini_model_error(cand_model, e)
-                    if "429" in str(e) or "quota" in str(e).lower() or "resource_exhausted" in str(e).lower():
-                        if k_idx + 1 < len(all_keys):
-                            print(f"  ⚠️ Key #{k_idx+1} 遇到配額限制 (429)，自動無縫切換至 Key #{k_idx+2} 重試...")
-                            continue
-                    print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 調用失敗: {e}，自動嘗試下一個候選模型/Key...")
-                    break
+                    if k_idx + 1 < len(all_keys):
+                        print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 調用失敗 ({e})，自動無縫切換至 Key #{k_idx+2} 重試...")
+                        continue
+                    else:
+                        print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 所有 Key 調用均失敗: {e}，自動嘗試下一個候選模型...")
+                        break
 
             if successful_model and parsed:
                 break
+        if successful_model and parsed:
+            break
         if attempt < 2:
             print("  ⏳ 第一輪所有候選模型調用遇到網絡或服務波動，等待 6 秒後啟動第二輪重試...")
             time.sleep(6)
