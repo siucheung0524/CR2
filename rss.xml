@@ -10,6 +10,18 @@
     <itunes:category text="Comedy" />
     <itunes:explicit>false</itunes:explicit>
     <item>
+      <title>2026-10-23 Bad Girl 大過佬</title>
+      <description><![CDATA[【第 1 節：啟發式正片】
+【第 2 節：啟發式正片】
+【第 3 節：啟發式正片】
+【第 4 節：啟發式正片】
+【第 5 節：啟發式正片】]]></description>
+      <pubDate>Fri, 23 Oct 2026 12:05:00 +0800</pubDate>
+      <guid isPermaLink="false">bgog-20261023</guid>
+      <enclosure url="https://cr2-podcast.tang-bf4.workers.dev/releases/download/bgog-20261023/bgog-20261023.m4a" length="66896533" type="audio/x-m4a" />
+      <itunes:duration>01:31:18</itunes:duration>
+    </item>
+    <item>
       <title>2026-10-22 Bad Girl 大過佬</title>
       <description><![CDATA[📻 2026-10-22 叱咤903《Bad Girl 大過佬》節目精華
 
@@ -170,13 +182,6 @@
       <guid isPermaLink="false">bgog-20261012</guid>
       <enclosure url="https://cr2-podcast.tang-bf4.workers.dev/releases/download/bgog-20261012/bgog-20261012.m4a" length="60409279" type="audio/x-m4a" />
       <itunes:duration>01:22:11</itunes:duration>
-    </item>
-    <item>
-      <title>2026-10-09 Bad Girl 大過佬</title>
-      <pubDate>Fri, 09 Oct 2026 12:05:00 +0800</pubDate>
-      <guid isPermaLink="false">bgog-20261009</guid>
-      <enclosure url="https://cr2-podcast.tang-bf4.workers.dev/releases/download/bgog-20261009/bgog-20261009.m4a" length="61857794" type="audio/x-m4a" />
-      <itunes:duration>01:24:11</itunes:duration>
     </item>
     <item>
       <title>2026-09-03 Bad Girl 大過佬</title>
