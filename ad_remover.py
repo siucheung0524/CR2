@@ -81,7 +81,9 @@ STATION_PROMOS = [
     "LIFE 音樂會", "LIFE音樂會", "woodie", "woodby", "即刻學堂", "即參學彈",
     "寫一秒", "新一秒", "七九零三", "即七九零三", "色測903", "釋測903", "釋測九零三", "跑高山", "爬下山", "借一秒", "者1秒",
     "王先生想你", "在晴朗的一天出發", "晴朗", "林海峰", "軟紙劫", "阮子健", "道格小島",
-    "Pay for the day", "為你親自打點", "同年的自己", "港鐵接軌", "貫通地上地下", "以即時新聞"
+    "Pay for the day", "為你親自打點", "同年的自己", "港鐵接軌", "貫通地上地下", "以即時新聞",
+    "Be Before Bed Time", "be before bed time", "不准睡先", "鄧小巧", "拾回自己的空間", "做回自己",
+    "美味開餐", "美食嘉年華", "香港美食嘉年華"
 ]
 
 # 6. 商業特約廣告詞庫
@@ -98,6 +100,8 @@ AD_KEYWORDS = [
     "要衝衝衝", "衝出身心健康",
     "AIA", "AIA+", "健康生活節", "身心健康", "麥當勞", "Donald M", "麥樂雞", "陌落計", "雞腿包", "Supreme Plus", "每公升", "加碼至",
     "駕駛學校", "駕駛改進課程", "肯倉", "二三四一一三二二", "公共服務車輛", "追返三分", "沒有三分", "扣分", "扣三分", "Shell", "V Power",
+    "戒賭", "戒賭熱線", "1834633", "平和基金", "Eason", "陳奕迅", "Recording Sessions", "演藝學院歌劇院", "Cityline", "City Line",
+    "加德士", "Tekron", "綠色殯葬", "食安中心", "Select街之選", "街之選", "百佳", "Fusion", "Taste", "西九", "爵士音樂節"
     "中銀香港理財", "城市售票網明日公開發售", "Chester 2", "恒基物業",
     "高光時刻", "周殷廷", "演唱會", "售票網", "城市售票網", "公開發售", "私隱專員", "私隱學堂", "個人資料", "香港驗車", "驗車公司",
     "全新單曲", "各大音樂平台", "美斯", "告別信",
@@ -722,7 +726,15 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                     any(w in s.get("text", "") for w in gap_stop_words)
                     for s in seg_in_gap
                 )
-                if not has_real_break and len(seg_in_gap) >= 3:
+                has_hallucination = any(
+                    any(p in s.get("text", "") for p in HALLUCINATION_PATTERNS)
+                    for s in seg_in_gap
+                )
+                has_host = any(
+                    any(h in s.get("text", "") for h in gap_host_keywords)
+                    for s in seg_in_gap
+                )
+                if not has_real_break and not has_hallucination and has_host and len(seg_in_gap) >= 3:
                     healed_items.append(f"假破口自動縫合：合併被誤切的正片區間 {p_end:.1f}s~{n_start:.1f}s (挽回 {gap:.1f}s 連續主持對話/問答)")
                     prev["end"] = float(nxt["end"])
                     prev["description"] = f"{prev.get('description', '')} + {nxt.get('description', '')}".strip(" +")
@@ -840,30 +852,38 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
             "聖艾粒", "星崖粒", "星矮粒", "星藝粒", "啦啦啦啦", "一早起床", "公海二",
             "太陽都落山", "太陽都降山", "長毛Jackie", "长毛Jackie", "開牙齒", "开牙齿"
         ] if is_ilub else [
-            "bad girl", "大過佬", "大過老", "帶過老", "來大笑代替上路", "代替上路",
-            "完美阿正", "笑爆嘴", "elsie", "alsie"
+            "bad girl", "badgirl", "大過佬", "大過老", "帶過老", "大过路", "大過路", "來大笑代替上路", "代替上路",
+            "完美阿正", "笑爆嘴", "elsie", "alsie", "借首歌", "借宿法", "借宿白",
+            "每日晨光", "每日晨運", "每日晨混", "扮六尺", "扮六呎"
         ]
-        # 尋找 p1_start 之前最後一則新聞/交通/天氣/宣傳片的結束點
+        # 尋找 0~350s 內開播前最後一則新聞/交通/天氣/公益宣傳/商業廣告的結束點與最早主題曲起點
         last_pre_show_ad_end = 25.0
+        earliest_cue_time = None
         for seg in transcript_segments:
             s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
             s_to = seg.get("offsets", {}).get("to", 0) / 1000.0 if "offsets" in seg else seg.get("end", 0.0)
             s_text = seg.get("text", "")
-            if s_from < p1_start:
-                if any(w in s_text for w in gap_stop_words) or any(w in s_text for w in ["王牌出場", "深夜一至二", "直播室跟大家再見面"]):
-                    last_pre_show_ad_end = max(last_pre_show_ad_end, s_to)
+            s_lower = s_text.lower()
+            if s_from <= 350.0:
+                if any(k in s_lower for k in intro_jingle_cues) or any(k in s_text for k in intro_jingle_cues):
+                    if earliest_cue_time is None:
+                        earliest_cue_time = s_from
+                if (earliest_cue_time is None or s_from <= earliest_cue_time):
+                    if any(w in s_text for w in gap_stop_words) or any(w in s_text for w in ["王牌出場", "深夜一至二", "直播室跟大家再見面"]):
+                        last_pre_show_ad_end = max(last_pre_show_ad_end, s_to)
 
-        found_start = None
-        for seg in transcript_segments:
-            s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
-            s_text = seg.get("text", "")
-            if max(25.0, last_pre_show_ad_end) <= s_from < p1_start - 3.0:
-                if any(k in s_text for k in intro_jingle_cues):
-                    found_start = s_from
-                    break
-        if found_start is not None:
-            healed_items.append(f"Part 1 起點由 {p1_start:.1f}s 前移至 {found_start:.1f}s (挽救開場主題曲前奏)")
-            p1["start"] = round(found_start, 2)
+        # 防提前切入廣告：若 p1_start 小於等於播前廣告結束點，延後起點避開廣告
+        if p1_start < last_pre_show_ad_end - 0.5:
+            new_p1_st = last_pre_show_ad_end
+            if earliest_cue_time and earliest_cue_time > last_pre_show_ad_end:
+                new_p1_st = max(last_pre_show_ad_end, earliest_cue_time - 3.0)
+            healed_items.append(f"Part 1 起點由 {p1_start:.1f}s 延後至 {new_p1_st:.1f}s (切除開播前商業廣告/公益宣傳/門票抽籤)")
+            p1["start"] = round(new_p1_st, 2)
+            p1_start = float(p1["start"])
+        # 防延遲切入：若 p1_start 大於最早 Jingle 起點，前移挽回開場前奏
+        elif earliest_cue_time and earliest_cue_time >= last_pre_show_ad_end and (p1_start - earliest_cue_time) > 3.0:
+            healed_items.append(f"Part 1 起點由 {p1_start:.1f}s 前移至 {earliest_cue_time:.1f}s (挽救開場主題曲前奏)")
+            p1["start"] = round(earliest_cue_time, 2)
             p1_start = float(p1["start"])
 
         if p1_start <= 500.0:
@@ -871,9 +891,39 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         else:
             checks["part1_intro"] = f"WARN (起點: {p1_start:.1f}s > 500s)"
 
-        # 2.2 Part 1 結束時間防提前切歌保護 (10:30 或 17:30 半點前流行歌)
+        # 2.2 Part 1 結束時間防提前切歌保護 (10:30 或 17:30 半點前流行歌) 與防異常跨越 10:30/17:30 廣告大破口
         p1_end = float(p1["end"])
-        if p1_end < 1250.0:
+        if p1_end > 1650.0:
+            # Part 1 異常跨越 10:30 / 17:30 廣告大破口！自動切除破口並拆分出 Part 2a
+            found_break_start = None
+            found_break_end = None
+            for seg in transcript_segments:
+                s_from = seg.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in seg else seg.get("start", 0.0)
+                s_to = seg.get("offsets", {}).get("to", 0)/1000.0 if "offsets" in seg else seg.get("end", 0.0)
+                s_text = seg.get("text", "")
+                s_lower = s_text.lower()
+                if 1250.0 <= s_from <= 1600.0:
+                    if any(w in s_text for w in gap_stop_words) or any(w in s_text for w in p1_break_keywords):
+                        if found_break_start is None:
+                            found_break_start = s_from
+                if 1600.0 <= s_from <= p1_end:
+                    if any(k in s_lower for k in intro_jingle_cues) or any(k in s_text for k in intro_jingle_cues):
+                        found_break_end = s_from
+                        break
+            if found_break_start and found_break_end:
+                half_time_label = "17:30" if is_ilub else "10:30"
+                healed_items.append(f"Part 1 異常過長修復：由 {p1_end:.1f}s 截斷至 {half_time_label} 廣告前 {found_break_start:.1f}s，並於 {found_break_end:.1f}s 接回 Part 2a (切除中途 {found_break_end - found_break_start:.1f}s 廣告大破口)")
+                orig_end = p1["end"]
+                p1["end"] = round(found_break_start, 2)
+                healed_keeps.insert(1, {
+                    "start": round(found_break_end, 2),
+                    "end": orig_end,
+                    "description": f"Part 2a: {half_time_label} 半點破口後主題 Jingle 接回"
+                })
+                checks["part1_pop_song"] = f"PASS (異常過長已自癒拆分，Part 1 結束於: {p1['end']}s)"
+            else:
+                checks["part1_pop_song"] = f"PASS (結束點: {p1_end:.1f}s >= 1250s)"
+        elif p1_end < 1250.0:
             new_p1_end = p1_end
             for seg in transcript_segments:
                 s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
@@ -910,10 +960,10 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         h2_first_keeps = [k for k in healed_keeps if 3400.0 <= float(k["start"]) < 5200.0]
         if h2_first_keeps:
             last_h2_first_end = max(float(k["end"]) for k in h2_first_keeps)
-            if last_h2_first_end < 4950.0:
-                checks["part3_continuity"] = f"WARN (第二小時上半段結束於: {last_h2_first_end:.1f}s < 4950s)"
+            if last_h2_first_end < 4800.0:
+                checks["part3_continuity"] = f"WARN (第二小時上半段結束於: {last_h2_first_end:.1f}s < 4800s)"
             else:
-                checks["part3_continuity"] = f"PASS (第二小時上半段結束於: {last_h2_first_end:.1f}s >= 4950s)"
+                checks["part3_continuity"] = f"PASS (第二小時上半段結束於: {last_h2_first_end:.1f}s >= 4800s)"
         else:
             checks["part3_continuity"] = "FAIL (缺少第二小時上半段)"
 
@@ -1176,14 +1226,14 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
 
         part_rules = """2. 【四個段落（Parts 1~4）的起止點判定規範（《Bad Girl 大過佬》10:00 - 12:00）】：
    - 【Part 1（第一小時上半段，10:00 - 10:30）】：
-     * 起點：開播前電台台呼/天氣/商業廣告以及前續節目宣傳結束，節目專屬開場主題曲前奏音樂響起之處（約 30s~240s，切勿因前奏為純音樂而延遲切入歌詞！）。
-     * 終點：10:30 商業廣告與報時開始前（通常落在 1300s~1500s / 21~25 分鐘左右）。【絕對不可在 18 分鐘或話題剛說完就提前切斷】！若主持人在話題結束後播了一首流行歌（如 1080s~1280s）並繼續說話/宣布活動再入廣告，歌曲與後續對話必須完整連貫保留！
+     * 起點：【極度重要】開場前若有戒賭熱線、食環署綠色殯葬、麥當勞陳奕迅演唱會、加德士汽油等商業廣告或公益宣傳，【全部屬於廣告，必須完全切除】！Part 1 起點必須精準落在《Bad Girl 大過佬》開場主題曲前奏音樂/歌詞起拍的瞬間（歌詞如「借首歌每日晨光打破... 戴假髮化濃妝... Bad Girl 大過佬... 來大笑代替上路」），絕不可保留開場前的商業廣告！
+     * 終點：【極度重要】Part 1 必須在 10:30 半點廣告破口前（通常在 1300s~1450s 之間，例如「香港美食嘉年華」、10:30報時、天氣預測等廣告破口前）結束！【絕對不可將 10:30 的商業廣告大破口（通常長達 5~7 分鐘，包含美食嘉年華、天氣、All-Star籃球賽等商業廣告）包含進 Part 1】！10:30 廣告破口後的內容屬於 Part 2！Part 1 的 end 絕對不可能超過 1550s！
    - 【Part 2（第一小時下半段，10:30 - 11:00，可拆為 2a/2b）】：
-     * 起點：半點廣告破口結束後，主持人說話或節目 Jingle 接回之處（約 1700s 左右）。
-     * 終點：【極度重要】必須依據逐字稿實際語意！主持人們在整點前結束話題的時間各集皆不同。若中途有 1 分鐘廣告，拆分為 2a 與 2b，後半段話題必須聊到 11:00 整點新聞報時前（約 3200s 左右）！只有當主持人明確結束話題，隨後緊接著商業廣告或整點新聞報時之處，才是 Part 2 終點！
+     * 起點：10:30 半點商業廣告大破口結束後，主持人說話或節目 Jingle 接回之處（約 1700s~1850s 左右，如「Bad Girl 大過佬 森美 阿正 Elsie... 來大笑代替上路」或「吹水未夠班」）。
+     * 終點：【極度重要】必須依據逐字稿實際語意！主持人們在整點前結束話題的時間各集皆不同。若中途有電台其他節目宣傳片（如《Be Before Bed Time》鄧小巧宣傳片）或 30 秒至 1 分鐘短廣告（如百佳、Select街之選），【必須切除並拆分為 Part 2a 與 Part 2b】！後半段話題必須聊到 11:00 整點新聞報時前（約 3200s 左右）！只有當主持人明確結束話題，隨後緊接著商業廣告或整點新聞報時之處，才是 Part 2 終點！
    - 【Part 3（第二小時上半段，11:00 - 11:30，可拆為 3a/3b）】：
      * 起點：【極度重要】整點新聞後，若主持人僅隨口說幾句隨即進入商業廣告破口，或中間有商業贊助遊戲（如換票證、電影戲票問答）、商業特約廣告及其他節目宣傳聲帶，【這些全部屬於商業破口，必須完全切除】！Part 3 起點必須精準落在第二小時正式單元專屬 Jingle（如週二【衰佬CLS】主題 Jingle「森仔 咩啊... 來大笑代替上路...」、週四【粒粒皆辛苦/十句講曬】或嘉賓專訪 Jingle）起拍響起的瞬間！
-     * 終點：【極度重要】若中途有 1 分鐘短廣告，拆分為 3a 與 3b，後半段話題必須聊到 11:30 半點報時與商業廣告開始前（約 5000s 左右）！絕不可在 11:15 說完一個話題就提早將整個 Part 3 截斷！
+     * 終點：【極度重要】若中途有 1 分鐘短廣告，拆分為 3a 與 3b，後半段話題必須聊到 11:30 半點報時與商業廣告開始前（約 4800s~5050s 左右）！絕不可在 11:15 說完一個話題就提早將整個 Part 3 截斷！
    - 【Part 4（第二小時下半段，11:30 - 12:00）】：
      * 起點：【極度重要】半點廣告破口通常包含《此時此刻 有誰共鳴》（公益團體呼籲如捐款支持某協會）等商業/公益宣傳，【全部屬於廣告破口，必須完全切除】！Part 4 起點必須精確落在單元專屬 Jingle（如 Everyday is 新day、雞仔好人、衰佬CLS 等）起拍響起的瞬間，【絕不可延遲切入，也絕不可將前面的有誰共鳴公益聲帶保留進來】！
      * 終點：【極度重要】節目最後主持人道別後，若有播放片尾曲，【片尾曲必須完整保留】直到 12:00 整點新聞報道開始前（通常在 6800s~6840s）！後續播出的商業廣告及整點新聞，【全部屬於破口，切除在新聞報時前一瞬間】！"""
