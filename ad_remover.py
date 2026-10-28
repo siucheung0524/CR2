@@ -483,11 +483,11 @@ HALLUCINATION_PATTERNS = [
     "中文字幕", "感謝觀看", "感谢观看", "謝謝觀看", "谢谢观看", "Amara.org"
 ]
 
-# 候選 Gemini 旗艦 Flash 模型池（依穩定度與健康度排序，首選超快穩定的 gemini-3.5-flash）
+# 候選 Gemini 旗艦 Flash 模型池（首選推理能力與長文本結構辨識最佳的 gemini-3.6-flash）
 DEFAULT_GEMINI_MODELS = [
-    "gemini-3.5-flash",
     "gemini-3.6-flash",
     "gemini-3.8-flash",
+    "gemini-3.5-flash",
     "gemini-flash-latest"
 ]
 GEMINI_STATE_FILE = os.path.join(SCRIPT_DIR, ".gemini_model_state.json")
@@ -944,6 +944,60 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         else:
             checks["part1_pop_song"] = f"PASS (結束點: {p1_end:.1f}s >= 1250s)"
 
+        # 2.25 整點新聞與廣告破口防吞自癒保護 (11:00 或 18:00 整點新聞，嚴禁單一正片區間橫跨整點！)
+        # 若某區間跨越了 3250s (整點新聞前) 與 3480s (第二小時 Jingle 接回)，代表模型嚴重幻覺吞噬了整點新聞與廣告大破口！
+        new_healed_keeps = []
+        for k in healed_keeps:
+            k_st = float(k["start"])
+            k_et = float(k["end"])
+            if k_st < 3250.0 and k_et > 3480.0:
+                news_break_keywords = ["新聞報道", "新聞報導", "商業電台新聞", "即測903", "叱咤903 新聞", "11點", "18點", "十一點", "十八點", "報告新聞"]
+                h2_start_jingles = [
+                    "今日手機碌多咗", "手機弄多", "手機碌多", "最後一個post", "最後一條reels", "最後一個",
+                    "大明星殺手", "衰佬", "衰佬cls", "粒粒皆辛苦", "你知道唔知道有人掛住你", "來大笑代替上路",
+                    "bad girl", "大過佬", "每日一問", "突擊測驗", "突擊貪業", "有冇共鳴", "寶寶很苦", "明星插班生", "晚間劇場"
+                ]
+                found_news_st = None
+                for s in transcript_segments:
+                    st_sec = s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)
+                    txt = s.get("text", "")
+                    if 3100.0 <= st_sec <= 3350.0:
+                        if any(w in txt for w in news_break_keywords):
+                            found_news_st = st_sec
+                            break
+                if found_news_st is None:
+                    found_news_st = 3205.2
+
+                found_h2_st = None
+                for s in transcript_segments:
+                    st_sec = s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)
+                    txt = s.get("text", "")
+                    if 3500.0 <= st_sec <= 3900.0:
+                        if any(w in txt.lower() for w in h2_start_jingles):
+                            found_h2_st = st_sec
+                            break
+                if found_h2_st is None:
+                    found_h2_st = 3720.1
+
+                healed_items.append(
+                    f"整點新聞破口自癒拆分：區間異常跨越整點新聞破口（{k_st:.1f}s~{k_et:.1f}s），"
+                    f"自動於 {found_news_st:.1f}s 截斷第一小時，並於 {found_h2_st:.1f}s 接回第二小時"
+                    f"（切除中途 {found_h2_st - found_news_st:.1f}s 整點新聞、天氣、公益與商業廣告）"
+                )
+                new_healed_keeps.append({
+                    "start": k_st,
+                    "end": round(found_news_st, 2),
+                    "description": f"{k.get('description', '')} (第一小時末尾，整點新聞前)"
+                })
+                new_healed_keeps.append({
+                    "start": round(found_h2_st, 2),
+                    "end": k_et,
+                    "description": "第二小時上半段單元 Jingle 接回"
+                })
+            else:
+                new_healed_keeps.append(k)
+        healed_keeps = new_healed_keeps
+
         # 2.3 Part 2 結束點檢驗 (11:00 或 18:00 整點新聞前主持對話)
         h1_keeps = [k for k in healed_keeps if float(k["start"]) < 3500.0]
         if h1_keeps:
@@ -955,6 +1009,7 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                 checks["part2_continuity"] = f"PASS (第一小時最後結束於: {last_h1_end:.1f}s >= {int(h1_min_end)}s)"
         else:
             checks["part2_continuity"] = "FAIL (缺少第一小時下半段)"
+            failure_reasons.append("缺少第一小時下半段")
 
         # 2.4 Part 3 結束點檢驗 (11:30 或 18:30 半點前單元遊戲)
         h2_first_keeps = [k for k in healed_keeps if 3400.0 <= float(k["start"]) < 5200.0]
@@ -966,11 +1021,30 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                 checks["part3_continuity"] = f"PASS (第二小時上半段結束於: {last_h2_first_end:.1f}s >= 4800s)"
         else:
             checks["part3_continuity"] = "FAIL (缺少第二小時上半段)"
+            failure_reasons.append("缺少第二小時上半段")
 
-        # 2.5 Part 4 結尾片尾曲防提前切歌保護 (12:00 或 19:00 整點新聞前，含 60s 前瞻防誤吞片尾劇場式廣告/宣傳)
+        # 2.5 Part 4 結尾片尾曲防提前切歌保護與防誤吞片尾商業廣告 (12:00 或 19:00 整點新聞前)
         p_last = healed_keeps[-1]
         last_end = float(p_last["end"])
         new_last_end = last_end
+
+        # 防誤吞片尾廣告：若 last_end 落在片尾廣告中，自動回縮至廣告開始前
+        outro_ad_words = [
+            "想你陪我錄音", "想你陪我录音", "mcdonald", "eason", "recording sessions", "陳奕迅", "陈奕迅",
+            "本篇兒童不宜", "本篇青少年", "12點", "12点", "19點", "19点", "十二點", "十九點", "新聞報道", "新聞報導"
+        ]
+        for s in transcript_segments:
+            st_sec = s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)
+            txt = s.get("text", "")
+            if 6650.0 <= st_sec <= last_end:
+                if any(w in txt.lower() for w in outro_ad_words):
+                    if st_sec < last_end - 1.0:
+                        healed_items.append(f"Part 4 結尾由 {last_end:.1f}s 提早回縮至 {st_sec:.1f}s (切除片尾麥當勞/十二點新聞前廣告)")
+                        p_last["end"] = round(st_sec, 2)
+                        last_end = float(p_last["end"])
+                        new_last_end = last_end
+                    break
+
         if last_end < 6680.0:
             for idx_s, seg in enumerate(transcript_segments):
                 s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
@@ -1043,18 +1117,18 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     # 推導最終切除區間
     final_cuts = derive_cuts_from_keep_intervals(healed_keeps, total_duration)
 
-    passed = (len(failure_reasons) == 0)
-
     # 評分機制
     score = 100
-    if not passed:
-        score -= 50
     for k, v in checks.items():
         if "WARN" in v:
             score -= 10
         elif "FAIL" in v:
             score -= 25
+            if not any(k in r for r in failure_reasons):
+                failure_reasons.append(f"品檢項目未通過: {k} ({v})")
     score = max(0, score)
+
+    passed = (len(failure_reasons) == 0 and score >= 80)
 
     report = {
         "passed": passed,
@@ -1231,8 +1305,9 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
    - 【Part 2（第一小時下半段，10:30 - 11:00，可拆為 2a/2b）】：
      * 起點：10:30 半點商業廣告大破口結束後，主持人說話或節目 Jingle 接回之處（約 1700s~1850s 左右，如「Bad Girl 大過佬 森美 阿正 Elsie... 來大笑代替上路」或「吹水未夠班」）。
      * 終點：【極度重要】必須依據逐字稿實際語意！主持人們在整點前結束話題的時間各集皆不同。若中途有電台其他節目宣傳片（如《Be Before Bed Time》鄧小巧宣傳片）或 30 秒至 1 分鐘短廣告（如百佳、Select街之選），【必須切除並拆分為 Part 2a 與 Part 2b】！後半段話題必須聊到 11:00 整點新聞報時前（約 3200s 左右）！只有當主持人明確結束話題，隨後緊接著商業廣告或整點新聞報時之處，才是 Part 2 終點！
+     * 【極度嚴格警告：嚴禁跨越 11:00 整點新聞！】Part 2 的終點【絕對不可能超過 3250s】！11:00 整點新聞報道、天氣、交通與商業廣告（長達 7~9 分鐘）必須完全切除！即使 11:00 前後正在進行同一個單元遊戲，11:00 前的內容屬於 Part 2，11:00 新聞與廣告後接回的內容必須作為 Part 3！【絕不可將 11:00 整點新聞包含在正片中】！
    - 【Part 3（第二小時上半段，11:00 - 11:30，可拆為 3a/3b）】：
-     * 起點：【極度重要】整點新聞後，若主持人僅隨口說幾句隨即進入商業廣告破口，或中間有商業贊助遊戲（如換票證、電影戲票問答）、商業特約廣告及其他節目宣傳聲帶，【這些全部屬於商業破口，必須完全切除】！Part 3 起點必須精準落在第二小時正式單元專屬 Jingle（如週二【衰佬CLS】主題 Jingle「森仔 咩啊... 來大笑代替上路...」、週四【粒粒皆辛苦/十句講曬】或嘉賓專訪 Jingle）起拍響起的瞬間！
+     * 起點：【極度重要】11:00 整點新聞、天氣、交通及隨後的商業特約廣告結束後，第二小時正式單元專屬 Jingle（如週三【今日手機碌多咗】「最後一個post... 最後一條reels...」、週二【衰佬CLS】「森仔 咩啊...」、週四【粒粒皆辛苦】或嘉賓專訪 Jingle）起拍響起的瞬間（通常落在 3650s~3750s 左右）！
      * 終點：【極度重要】若中途有 1 分鐘短廣告，拆分為 3a 與 3b，後半段話題必須聊到 11:30 半點報時與商業廣告開始前（約 4800s~5050s 左右）！絕不可在 11:15 說完一個話題就提早將整個 Part 3 截斷！
    - 【Part 4（第二小時下半段，11:30 - 12:00）】：
      * 起點：【極度重要】半點廣告破口通常包含《此時此刻 有誰共鳴》（公益團體呼籲如捐款支持某協會）等商業/公益宣傳，【全部屬於廣告破口，必須完全切除】！Part 4 起點必須精確落在單元專屬 Jingle（如 Everyday is 新day、雞仔好人、衰佬CLS 等）起拍響起的瞬間，【絕不可延遲切入，也絕不可將前面的有誰共鳴公益聲帶保留進來】！
@@ -1323,47 +1398,54 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
                         result_text = res["candidates"][0]["content"]["parts"][0]["text"]
                         parsed = json.loads(result_text)
 
-                    keep_intervals = parsed.get("keep_intervals", [])
-                    if not keep_intervals:
+                    raw_keeps = parsed.get("keep_intervals", [])
+                    if not raw_keeps:
                         raise ValueError(f"模型 {cand_model} 未回傳有效的 keep_intervals")
 
+                    # 嚴格品質檢驗：調用品檢門禁進行自癒與多維度評分，若未通過或評分 < 80 嚴格禁止採用！
+                    cand_passed, cand_keeps, cand_cuts, cand_report = inspect_and_verify_cut_quality(
+                        raw_keeps, cuts=[], total_duration=total_duration,
+                        transcript_segments=transcript_segments, show_code=show_code,
+                        engine_used=f"gemini ({cand_model})"
+                    )
+                    cand_score = cand_report.get("score", 0)
+                    if not cand_passed or cand_score < 80:
+                        reasons = cand_report.get("failure_reasons", [])
+                        raise ValueError(f"模型 {cand_model} 產出區間未達品質標準 (Score: {cand_score}/100, passed={cand_passed}, 失敗項: {reasons})")
+
                     successful_model = cand_model
+                    keep_intervals = cand_keeps
+                    cuts = cand_cuts
+                    report = cand_report
                     if cand_model in all_models_list:
                         model_idx = all_models_list.index(cand_model)
                         record_gemini_model_success(cand_model, model_idx)
 
-                    print(f"  ✨ 模型 [{cand_model}]{key_tag} 分析成功！")
+                    print(f"  ✨ 模型 [{cand_model}]{key_tag} 分析成功並通過品檢門禁 (評分: {cand_score}/100)！")
                     break
 
                 except Exception as e:
                     last_error = e
                     record_gemini_model_error(cand_model, e)
                     if k_idx + 1 < len(all_keys):
-                        print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 調用失敗 ({e})，自動無縫切換至 Key #{k_idx+2} 重試...")
+                        print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 調用失敗或品檢未達標 ({e})，自動無縫切換至 Key #{k_idx+2} 重試...")
                         continue
                     else:
-                        print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 所有 Key 調用均失敗: {e}，自動嘗試下一個候選模型...")
+                        print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 所有 Key 調用均失敗或品檢未達標: {e}，自動嘗試下一個候選模型...")
                         break
 
-            if successful_model and parsed:
+            if successful_model and keep_intervals and report:
                 break
-        if successful_model and parsed:
+        if successful_model and keep_intervals and report:
             break
         if attempt < 2:
             print("  ⏳ 第一輪所有候選模型調用遇到網絡或服務波動，等待 6 秒後啟動第二輪重試...")
             time.sleep(6)
 
-    if not successful_model or not parsed:
-        raise RuntimeError(f"所有候選 Gemini 模型均調用失敗，最後錯誤: {last_error}")
+    if not successful_model or not keep_intervals or not report:
+        raise RuntimeError(f"所有候選 Gemini 模型均調用失敗或品檢未達標，最後錯誤: {last_error}")
 
-    keep_intervals = parsed.get("keep_intervals", [])
-
-    # 執行品檢門禁與自癒機制 (Quality Gatekeeper & Self-Healing Engine)
-    passed, keep_intervals, cuts, report = inspect_and_verify_cut_quality(
-        keep_intervals, cuts=[], total_duration=total_duration,
-        transcript_segments=transcript_segments, show_code=show_code,
-        engine_used=f"gemini ({successful_model})"
-    )
+    passed = report.get("passed", True)
 
     if cache_file and passed:
         try:
