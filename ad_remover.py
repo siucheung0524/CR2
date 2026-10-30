@@ -83,7 +83,9 @@ STATION_PROMOS = [
     "王先生想你", "在晴朗的一天出發", "晴朗", "林海峰", "軟紙劫", "阮子健", "道格小島",
     "Pay for the day", "為你親自打點", "同年的自己", "港鐵接軌", "貫通地上地下", "以即時新聞",
     "Be Before Bed Time", "be before bed time", "不准睡先", "鄧小巧", "拾回自己的空間", "做回自己",
-    "美味開餐", "美食嘉年華", "香港美食嘉年華"
+    "美味開餐", "美食嘉年華", "香港美食嘉年華",
+    "知芬衣", "朱芬", "知多知那麼多", "知多知咁多", "Centerminia", "善男信女", "鍾雪瑩", "楊偉倫",
+    "星矮粒", "聖艾粒", "下午五至七", "啦啦星之中八拍", "黃先生想你點", "點話點好"
 ]
 
 # 6. 商業特約廣告詞庫
@@ -101,11 +103,14 @@ AD_KEYWORDS = [
     "AIA", "AIA+", "健康生活節", "身心健康", "麥當勞", "Donald M", "麥樂雞", "陌落計", "雞腿包", "Supreme Plus", "每公升", "加碼至",
     "駕駛學校", "駕駛改進課程", "肯倉", "二三四一一三二二", "公共服務車輛", "追返三分", "沒有三分", "扣分", "扣三分", "Shell", "V Power",
     "戒賭", "戒賭熱線", "1834633", "平和基金", "Eason", "陳奕迅", "Recording Sessions", "演藝學院歌劇院", "Cityline", "City Line",
-    "加德士", "Tekron", "綠色殯葬", "食安中心", "Select街之選", "街之選", "百佳", "Fusion", "Taste", "西九", "爵士音樂節"
+    "加德士", "Tekron", "綠色殯葬", "食安中心", "Select街之選", "街之選", "百佳", "Fusion", "Taste", "西九", "爵士音樂節",
     "中銀香港理財", "城市售票網明日公開發售", "Chester 2", "恒基物業",
     "高光時刻", "周殷廷", "演唱會", "售票網", "城市售票網", "公開發售", "私隱專員", "私隱學堂", "個人資料", "香港驗車", "驗車公司",
     "全新單曲", "各大音樂平台", "美斯", "告別信",
-    "譚仔", "米線", "譚仔雲南米線", "髮再生", "發在身", "護髮專家", "兒童癌病基金", "捐出5元", "專鎖快", "跨境付款"
+    "譚仔", "米線", "譚仔雲南米線", "髮再生", "發在身", "護髮專家", "兒童癌病基金", "捐出5元", "專鎖快", "跨境付款",
+    "全城一致讚好", "和爹一起去旅行", "和爹去旅行", "我爹想旅行", "我爹上旅行", "狂賀連續七日", "狂賀連續七天", "飄放冠軍", "票房冠軍",
+    "香港國際機場", "王嘉爾", "Jackson Wang", "Under the Castle", "打卡點", "SELECT街之選", "白街自家品牌", "意想前", "易賞錢",
+    "Glip", "心安情", "OCBC華僑銀行", "華僑銀行", "成就每一個理想", "用心幫有心人"
 ]
 
 # 7. 節目專屬 Jingle / 主持關鍵字（重點保護，絕不可切！）
@@ -135,14 +140,17 @@ PROGRAM_JINGLE_KEYWORDS = [
 # 8. 整點與半點報時關鍵字（需精確定位報時與嗶聲）
 TIME_ANNOUNCEMENT_KEYWORDS = [
     "10點", "11點", "12點", "5點", "6點", "7點", "十點", "十一點", "十二點", "五點", "六點", "七點",
-    "10點半", "11點半", "十點半", "十一點半", "10時半", "11時半", "5點半", "6點半", "7點半"
+    "10點半", "11點半", "十點半", "十一點半", "10時半", "11時半", "5點半", "6點半", "7點半",
+    "10点", "11点", "12点", "5点", "6点", "7点", "十点", "十一点", "十二点", "五点", "六点", "七点",
+    "10点半", "11点半", "十点半", "十一点半", "5点半", "6点半", "7点半"
 ]
 
 # 9. 半點時鐘破口關鍵字 (:30)
 HALF_HOUR_KEYWORDS = [
     "10點半", "10時半", "十點半", "11點半", "11時半", "十一點半",
     "5點半", "5時半", "五點半", "6點半", "6時半", "六點半",
-    "17點半", "18點半"
+    "17點半", "18點半",
+    "10点半", "十点半", "11点半", "十一点半", "5点半", "五点半", "6点半", "六点半"
 ]
 
 
@@ -674,7 +682,8 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     ]
     outro_ad_markers = [
         "喜療駝", "藥膏", "痛腳", "雙人套房", "小中瓶", "精華水", "綠色殯葬", "綠色笨藏",
-        "食環署", "食環柱", "本篇兒童不宜", "本片兒童不宜", "本片青少年", "我爹想旅行", "我爹上旅行"
+        "食環署", "食環柱", "本篇兒童不宜", "本片兒童不宜", "本片青少年", "我爹想旅行", "我爹上旅行",
+        "全城一致讚好", "和爹一起去旅行", "和爹去旅行", "狂賀連續七日", "狂賀連續七天", "飄放冠軍", "票房冠軍", "心安情", "Glip"
     ]
     gap_stop_words = set(
         AD_KEYWORDS + TRAFFIC_KEYWORDS + WEATHER_KEYWORDS + NEWS_START_KEYWORDS +
@@ -703,6 +712,50 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                     healed_items.append(f"段落結尾對齊：由 {k_end:.1f}s 延伸至行尾 {s_to:.1f}s (完整保留結尾音樂/報歌名)")
                     k["end"] = round(s_to, 2)
                     break
+
+    tail_ad_stop_words = set(
+        AD_KEYWORDS + outro_ad_markers + STATION_PROMOS + PSA_KEYWORDS +
+        TRAFFIC_KEYWORDS + WEATHER_KEYWORDS + NEWS_START_KEYWORDS + [
+            "天氣預測", "天氣預算", "流感", "皇家加勒比", "十方法師", "萬寧", "護髮", "打針", "防流感",
+            "青衣城", "清衣城", "國際歌迷會", "各大音樂平台", "輸血服務中心", "紅十字會", "通訊局", "coms-auth"
+        ]
+    )
+
+    # -------------------------------------------------------------
+    # 檢查項 0.1：段落結尾防誤吞廣告/宣傳回縮 (Boundary Tail Ad Pullback)
+    # 若某正片段落結尾最後 35 秒內已進入廣告、節目宣傳、報時，自動回縮至廣告開始前
+    # -------------------------------------------------------------
+    for k in healed_keeps:
+        k_st = float(k["start"])
+        k_et = float(k["end"])
+        earliest_tail_ad = None
+        earliest_ad_text = ""
+        tail_window = max(k_st, k_et - 35.0)
+
+        tail_segs = [
+            s for s in transcript_segments
+            if tail_window <= (s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)) < k_et
+        ]
+
+        for s in tail_segs:
+            s_from = s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)
+            s_to = s.get("offsets", {}).get("to", 0)/1000.0 if "offsets" in s else s.get("end", 0.0)
+            s_txt = s.get("text", "").strip()
+            is_pure_time = any(w in s_txt for w in HALF_HOUR_KEYWORDS + TIME_ANNOUNCEMENT_KEYWORDS) and (len(s_txt) <= 8) and not any(h in s_txt for h in gap_host_keywords)
+            is_ad_seg = any(w in s_txt for w in tail_ad_stop_words) or is_pure_time
+            if is_ad_seg:
+                if earliest_tail_ad is None:
+                    earliest_tail_ad = s_from
+                    earliest_ad_text = s_txt
+            else:
+                is_host_or_jingle = any(h in s_txt for h in gap_host_keywords + PROGRAM_JINGLE_KEYWORDS)
+                if is_host_or_jingle:
+                    earliest_tail_ad = None
+                    earliest_ad_text = ""
+
+        if earliest_tail_ad is not None and (k_et - earliest_tail_ad >= 0.5):
+            healed_items.append(f"段落結尾廣告回縮：由 {k_et:.1f}s 提早回縮至 {earliest_tail_ad:.1f}s (切除誤吞之宣傳/商業廣告: {earliest_ad_text[:20]})")
+            k["end"] = round(earliest_tail_ad, 2)
 
     # -------------------------------------------------------------
     # 檢查項 0.5：幻覺假破口自動縫合 (False Mid-Part Split Self-Healing)
@@ -925,20 +978,44 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                 checks["part1_pop_song"] = f"PASS (結束點: {p1_end:.1f}s >= 1250s)"
         elif p1_end < 1250.0:
             new_p1_end = p1_end
+            has_ad_after_p1 = False
             for seg in transcript_segments:
                 s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
                 s_to = seg.get("offsets", {}).get("to", 0) / 1000.0 if "offsets" in seg else seg.get("end", 0.0)
-                s_text = seg.get("text", "")
-                if 1250.0 <= s_from <= 1450.0:
-                    if any(k in s_text for k in p1_break_keywords):
-                        new_p1_end = round(s_to + 0.5, 2)
-                    elif s_from > new_p1_end and not any(k in s_text for k in gap_stop_words):
-                        new_p1_end = round(s_to, 2)
-            if new_p1_end > p1_end:
+                s_text = seg.get("text", "").strip()
+                if s_from < p1_end - 0.5:
+                    continue
+                if s_from > 1650.0:
+                    break
+                # 若遇到任何廣告、宣傳、交通、天氣、報時或破口字眼，廣告大破口已開始，立即終止延伸！
+                is_break_marker = (
+                    any(w in s_text for w in gap_stop_words) or
+                    any(w in s_text for w in outro_ad_markers) or
+                    any(k in s_text for k in p1_break_keywords) or
+                    any(k in s_text for k in HALF_HOUR_KEYWORDS) or
+                    any(k in s_text for k in TIME_ANNOUNCEMENT_KEYWORDS) or
+                    any(k in s_text for k in TRAFFIC_KEYWORDS + WEATHER_KEYWORDS + PSA_KEYWORDS + STATION_PROMOS + AD_KEYWORDS)
+                )
+                if is_break_marker:
+                    has_ad_after_p1 = True
+                    break
+                # 僅在無廣告且屬於音樂/歌曲或正片銜接（間隔 <= 5.0s）時順延
+                is_music_or_announce = (
+                    any(p in s_text for p in HALLUCINATION_PATTERNS) or
+                    any(w in s_text for w in song_announce_words)
+                )
+                if is_music_or_announce and (s_from - new_p1_end <= 5.0):
+                    new_p1_end = round(s_to, 2)
+                elif s_from - new_p1_end > 5.0:
+                    break
+
+            if new_p1_end > p1_end + 3.0:
                 half_label = "17:30" if is_ilub else "10:30"
                 healed_items.append(f"Part 1 結束點由 {p1_end:.1f}s 延伸至 {new_p1_end:.1f}s (挽救 {half_label} 半點前流行歌)")
                 p1["end"] = new_p1_end
-                checks["part1_pop_song"] = f"PASS (自癒延伸至: {p1['end']}s >= 1250s)"
+                checks["part1_pop_song"] = f"PASS (自癒延伸至: {p1['end']}s)"
+            elif has_ad_after_p1:
+                checks["part1_pop_song"] = f"PASS (結束點: {p1_end:.1f}s，隨後即為半點廣告破口)"
             else:
                 checks["part1_pop_song"] = f"WARN (結束點: {p1_end:.1f}s < 1250s)"
         else:
