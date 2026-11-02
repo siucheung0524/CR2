@@ -1229,6 +1229,207 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     return passed, healed_keeps, final_cuts, report
 
 
+def audit_boundaries_with_gemini(raw_keeps, transcript_segments, show_code="bgog", api_key=None, model=None, total_duration=7200.0):
+    """
+    【雙重審核機制 (Pass 2): 邊界顯微鏡深度覆核 (Two-Pass Microscopic Boundary Audit)】
+    在 Pass 1 全局劃定宏觀段落後，聚焦每個保留段落的【開頭前 120s / 後 60s】與【結尾前 180s / 後 90s】過渡帶逐字稿，
+    像顯微鏡一樣深度比對微觀對話與廣告邊界：
+    1. 剔除邊界殘留廣告（如頭部商業廣告/公益宣傳/開播前歌曲，尾部電台宣傳片/手工杏仁/知婚姨/姚堅新聞前導語）。
+    2. 搶救腰斬正片（如尾部主持人在入廣告前未說完的話題/預告/道別，開頭被誤切的主持人打招呼/Jingle）。
+    """
+    if not raw_keeps:
+        return raw_keeps
+
+    if not api_key:
+        api_key = get_gemini_api_key()
+    if not api_key:
+        print("  ⚠️ [Pass 2] 未提供有效的 GEMINI_API_KEY，維持 Pass 1 全局初劃區間")
+        return raw_keeps
+
+    def _get_seg_times(seg):
+        if "offsets" in seg:
+            t0 = seg["offsets"].get("from", 0) / 1000.0
+            t1 = seg["offsets"].get("to", 0) / 1000.0
+        else:
+            t0 = seg.get("start", 0.0)
+            t1 = seg.get("end", t0)
+        return t0, t1
+
+    def _format_window(segs, w_st, w_et):
+        lines = []
+        for s in segs:
+            t0, t1 = _get_seg_times(s)
+            if t1 >= w_st and t0 <= w_et:
+                txt = s.get("text", "").strip()
+                if not txt:
+                    continue
+                for pat in HALLUCINATION_PATTERNS:
+                    if pat in txt:
+                        txt = "[音樂 / 流行歌曲播放中]"
+                        break
+                m, sec = int(t0 // 60), int(t0 % 60)
+                lines.append(f"[{m:02d}:{sec:02d} ({t0:.1f}s -> {t1:.1f}s)] {txt}")
+        return "\n".join(lines)
+
+    boundary_sections = []
+    for idx, k in enumerate(raw_keeps):
+        st = float(k["start"])
+        et = float(k["end"])
+        desc = k.get("description", f"Part {idx+1}")
+
+        # 開頭過渡帶：前探 120 秒，後探 60 秒（覆蓋延遲切入或誤吞片頭廣告）
+        hw_st = max(0.0, st - 120.0)
+        hw_et = min(et, st + 60.0)
+        head_text = _format_window(transcript_segments, hw_st, hw_et)
+
+        # 結尾過渡帶：前探 180 秒，後探 90 秒（覆蓋提前腰斬主持話題，或誤吞尾隨電台宣傳片/新聞）
+        tw_st = max(st, et - 180.0)
+        tw_et = min(total_duration, et + 90.0)
+        tail_text = _format_window(transcript_segments, tw_st, tw_et)
+
+        boundary_sections.append(f"""### 【段落 #{idx+1}】: {desc}
+- **初步開頭起點 (Pass 1 Start)**: {st:.1f}s
+[開頭過渡帶逐字稿 (範圍 {hw_st:.1f}s ~ {hw_et:.1f}s)]:
+{head_text}
+
+- **初步結尾終點 (Pass 1 End)**: {et:.1f}s
+[結尾過渡帶逐字稿 (範圍 {tw_st:.1f}s ~ {tw_et:.1f}s)]:
+{tail_text}
+""")
+
+    boundaries_block = "\n".join(boundary_sections)
+
+    if show_code == "ilub":
+        show_specific_instructions = """- 《聖艾粒LaLaLaLa》（少爺占、當奴、Jacky、豪子）：
+  * 開場：開場前電台台呼/天氣/商業廣告以及前續節目宣傳結束，少爺占與當奴開場主題曲前奏音樂響起或兩人開場說話之處（約 100s~300s，切勿因前奏為純音樂而延遲切入！）。
+  * 尖峰交通消息：17:00~19:00 是下班尖峰，商台常有「馬路的事 交通消息」，交通消息聲帶可切除，但切口必須精確，絕不可誤殺主持人討論交通的笑話！
+  * 結尾：節目道別後的【片尾流行歌曲】必須完整連貫保留直至 19:00 整點新聞報道開始前！後續播出的商業廣告及整點新聞，【切除在 19:00 新聞報時前一瞬間】！"""
+    else:
+        show_specific_instructions = """- 《Bad Girl 大過佬》（森美、阿正、Elsie）：
+  * 開場：開場前的商業廣告（如麥當勞、綠色殯葬、加德士汽油等）必須完全切除，起點必須落在開場主題曲前奏音樂或主持開場打招呼瞬間。
+  * 10:30 半點與 11:30 半點破口：主持人結束話題或預告後，緊隨的商業廣告（如美食嘉年華、公益團體宣傳、半點報時、天氣預報）必須完全切除。
+  * 11:00 整點破口：嚴禁跨越 11:00 整點新聞！整點新聞及廣告長達 7~9 分鐘必須完全切除。
+  * 12:00 節目結尾：主持人結束話題或專訪、說出道別詞（如「下星期見」、「拜拜」、「Good show」、「大家撲飛」）後，緊接著出現的商業廣告、電台其他節目宣傳片（例如「手工杏仁宣傳」、「知婚姨宣傳」、商台節目預告）、新聞報道前導語（如「現在姚堅報道新聞」），【全部屬於廣告/非正片，必須完全切除】！終點必須精確落在主持人說完最後一句話的瞬間（約 6657s）！"""
+
+    prompt = f"""你是一位香港商台叱咤903廣播節目剪輯的【雙重審核 (Pass 2) 邊界專家】。
+系統已在 Pass 1 全局初劃出以下節目段落。現在請你像使用顯微鏡一樣，專注檢查每個段落的【開頭過渡帶】與【結尾過渡帶】逐字稿，精準校正起訖時間戳（秒數），消除廣告殘留與正片腰斬：
+
+【目標節目特性】：
+{show_specific_instructions}
+
+【極度重要審核準則】：
+1. 【開頭審核 (Head Boundary)】：
+   - 剔除廣告殘留：若開頭前包含商業廣告、公益廣告（如「有誰共鳴」）、天氣預報、新聞或電台呼號，必須將起點往後移至【節目開場 Jingle、主題曲前奏、或主持人正式說話】起拍的精確時間戳！
+   - 防正片腰斬：若初劃起點太晚，切掉了主持人的開場問候或開場 Jingle 前奏，必須往前延伸以完整保留開場！
+
+2. 【結尾審核 (Tail Boundary)】：
+   - 剔除廣告與節目宣傳片殘留：若結尾後包含了商業廣告、電台其他節目宣傳片（如「手工杏仁」、「知婚姨」、「混帳」、「晴朗的一天」）、新聞導語（如「現在由姚堅報道新聞」）或交通消息，【必須立即將終點回縮】，精確停在主持人最後一句說話結束或片尾曲結束的瞬間！
+   - 防正片腰斬：若初劃終點太早（例如主持人在廣告前還在交代話題、預告嘉賓如 Eason、或跟嘉賓互動道別），【絕對不可提前腰斬】，必須往後延伸保留至主持人最後一句說話結束！
+
+請審核以下各段過渡帶逐字稿：
+{boundaries_block}
+
+請嚴格輸出純 JSON，格式如下：
+{{
+  "audited_intervals": [
+    {{
+      "index": 1,
+      "original_start": 120.5,
+      "refined_start": 120.5,
+      "original_end": 1395.2,
+      "refined_end": 1395.2,
+      "head_notes": "開頭為開場 Jingle，無廣告殘留",
+      "tail_notes": "結尾對齊主持人入廣告前最後一句說話"
+    }}
+  ]
+}}"""
+
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "temperature": 0.1
+        }
+    }
+    req_data = json.dumps(payload).encode("utf-8")
+
+    if certifi:
+        ctx = ssl.create_default_context(cafile=certifi.where())
+    else:
+        ctx = ssl.create_default_context()
+
+    models_to_try = [model] if model else get_gemini_model_candidates()
+    all_keys = get_gemini_api_keys()
+    if not all_keys:
+        all_keys = [api_key]
+
+    audited_result = None
+    last_err = None
+
+    for m in models_to_try:
+        if "lite" in m.lower():
+            continue
+        for k in all_keys:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={k}"
+            req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
+                    res = json.loads(resp.read().decode("utf-8"))
+                    res_text = res["candidates"][0]["content"]["parts"][0]["text"]
+                    audited_result = json.loads(res_text)
+                if audited_result and "audited_intervals" in audited_result:
+                    break
+            except Exception as e:
+                last_err = e
+                continue
+        if audited_result and "audited_intervals" in audited_result:
+            break
+
+    if not audited_result or "audited_intervals" not in audited_result:
+        print(f"  ⚠️ [Pass 2] 邊界覆核請求未能完成 ({last_err})，安全維持 Pass 1 初劃區間")
+        return raw_keeps
+
+    audited_list = audited_result.get("audited_intervals", [])
+    refined_keeps = [dict(k) for k in raw_keeps]
+
+    print(f"\n  🔬 [Pass 2: 邊界顯微鏡深度覆核結果 ({len(audited_list)} 個區間)]:")
+    for idx, item in enumerate(audited_list):
+        if idx >= len(refined_keeps):
+            break
+        orig_s = float(refined_keeps[idx]["start"])
+        orig_e = float(refined_keeps[idx]["end"])
+        new_s = float(item.get("refined_start", orig_s))
+        new_e = float(item.get("refined_end", orig_e))
+        h_notes = item.get("head_notes", "")
+        t_notes = item.get("tail_notes", "")
+
+        # 合理性防護檢驗 (Sanity Checks)
+        # 1. 起點在終點之前，且區間時長 >= 120 秒
+        # 2. 微調範圍不得超過合理邊界偏差 (起點偏差 <= 150s, 終點偏差 <= 240s)
+        if new_s < new_e and (new_e - new_s >= 120.0):
+            if abs(new_s - orig_s) <= 150.0:
+                refined_keeps[idx]["start"] = round(new_s, 2)
+            else:
+                print(f"    ⚠️ 段落 #{idx+1} 起點微調偏差過大 ({orig_s:.1f}s -> {new_s:.1f}s)，維持原起點")
+
+            if abs(new_e - orig_e) <= 240.0:
+                refined_keeps[idx]["end"] = round(new_e, 2)
+            else:
+                print(f"    ⚠️ 段落 #{idx+1} 終點微調偏差過大 ({orig_e:.1f}s -> {new_e:.1f}s)，維持原終點")
+
+        final_s = refined_keeps[idx]["start"]
+        final_e = refined_keeps[idx]["end"]
+        diff_s = final_s - orig_s
+        diff_e = final_e - orig_e
+        print(f"    - 段落 #{idx+1}: 起點 {orig_s:.1f}s -> {final_s:.1f}s ({diff_s:+.1f}s), 終點 {orig_e:.1f}s -> {final_e:.1f}s ({diff_e:+.1f}s)")
+        if h_notes:
+            print(f"      開頭微調: {h_notes}")
+        if t_notes:
+            print(f"      結尾微調: {t_notes}")
+
+    return refined_keeps
+
+
 def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_code="bgog", api_key=None, model=None, date_str=None):
     """
     調用 Google Gemini Flash 雲端大模型進行前文後理（上下文）全篇語意理解與去廣告區間劃定。
@@ -1485,11 +1686,21 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
                     if not raw_keeps:
                         raise ValueError(f"模型 {cand_model} 未回傳有效的 keep_intervals")
 
+                    print(f"  🔍 [Pass 1 全局初劃完成] 成功識別出 {len(raw_keeps)} 個候選區間，啟動 [Pass 2 邊界顯微鏡深度覆核]...")
+                    audited_keeps = audit_boundaries_with_gemini(
+                        raw_keeps=raw_keeps,
+                        transcript_segments=transcript_segments,
+                        show_code=show_code,
+                        api_key=cur_key,
+                        model=cand_model,
+                        total_duration=total_duration
+                    )
+
                     # 嚴格品質檢驗：調用品檢門禁進行自癒與多維度評分，若未通過或評分 < 80 嚴格禁止採用！
                     cand_passed, cand_keeps, cand_cuts, cand_report = inspect_and_verify_cut_quality(
-                        raw_keeps, cuts=[], total_duration=total_duration,
+                        audited_keeps, cuts=[], total_duration=total_duration,
                         transcript_segments=transcript_segments, show_code=show_code,
-                        engine_used=f"gemini ({cand_model})"
+                        engine_used=f"gemini ({cand_model} 2-Pass)"
                     )
                     cand_score = cand_report.get("score", 0)
                     if not cand_passed or cand_score < 80:
