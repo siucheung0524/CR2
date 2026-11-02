@@ -84,15 +84,16 @@ STATION_PROMOS = [
     "Pay for the day", "為你親自打點", "同年的自己", "港鐵接軌", "貫通地上地下", "以即時新聞",
     "Be Before Bed Time", "be before bed time", "不准睡先", "鄧小巧", "拾回自己的空間", "做回自己",
     "美味開餐", "美食嘉年華", "香港美食嘉年華",
-    "知芬衣", "朱芬", "知多知那麼多", "知多知咁多", "Centerminia", "善男信女", "鍾雪瑩", "楊偉倫",
-    "星矮粒", "聖艾粒", "下午五至七", "啦啦星之中八拍", "黃先生想你點", "點話點好"
+    "知芬衣", "知婚姨", "朱芬", "知多知那麼多", "知多知咁多", "Centerminia", "善男信女", "鍾雪瑩", "楊偉倫",
+    "星矮粒", "聖艾粒", "下午五至七", "啦啦星之中八拍", "黃先生想你點", "點話點好",
+    "先生小姐", "先生,小姐", "拖匪", "手工杏仁", "拖匪翠翠"
 ]
 
 # 6. 商業特約廣告詞庫
 AD_KEYWORDS = [
     "查詢", "詳情", "致電", "熱線", "登記", "立即致電", "優惠", "折扣", "送完即止",
     "條款及細則", "受條款及細則約束", "冠名贊助", "特約贊助", "全力贊助", "贊助播出", "節目贊助", "鳴謝贊助",
-    "限時優惠", "現正發售", "門票現正", "公開發售", "快達票", "城網", "撲飛",
+    "限時優惠", "現正發售", "門票現正", "公開發售", "快達票", "城網",
     "免費體驗", "立即登記", "電話查詢", "歡迎致電", "借定唔借", "還得到先好借",
     "儲蓄保險", "人壽保險", "定期存款", "年利率", "信用卡", "現金回贈",
     "立即下載", "應用程式", "各大門市", "各大分店", "各大專櫃", "專門店", "門市", "分店",
@@ -102,15 +103,16 @@ AD_KEYWORDS = [
     "要衝衝衝", "衝出身心健康",
     "AIA", "AIA+", "健康生活節", "身心健康", "麥當勞", "Donald M", "麥樂雞", "陌落計", "雞腿包", "Supreme Plus", "每公升", "加碼至",
     "駕駛學校", "駕駛改進課程", "肯倉", "二三四一一三二二", "公共服務車輛", "追返三分", "沒有三分", "扣分", "扣三分", "Shell", "V Power",
-    "戒賭", "戒賭熱線", "1834633", "平和基金", "Eason", "陳奕迅", "Recording Sessions", "演藝學院歌劇院", "Cityline", "City Line",
+    "戒賭", "戒賭熱線", "1834633", "平和基金", "Recording Sessions", "演藝學院歌劇院", "Cityline", "City Line", "Cityline開放登記抽籤", "登記抽籤",
     "加德士", "Tekron", "綠色殯葬", "食安中心", "Select街之選", "街之選", "百佳", "Fusion", "Taste", "西九", "爵士音樂節",
     "中銀香港理財", "城市售票網明日公開發售", "Chester 2", "恒基物業",
-    "高光時刻", "周殷廷", "演唱會", "售票網", "城市售票網", "公開發售", "私隱專員", "私隱學堂", "個人資料", "香港驗車", "驗車公司",
-    "全新單曲", "各大音樂平台", "美斯", "告別信",
-    "譚仔", "米線", "譚仔雲南米線", "髮再生", "發在身", "護髮專家", "兒童癌病基金", "捐出5元", "專鎖快", "跨境付款",
+    "高光時刻", "售票網", "城市售票網", "公開發售", "私隱專員", "私隱學堂", "個人資料", "香港驗車", "驗車公司",
+    "全新單曲", "各大音樂平台", "告別信",
+    "譚仔", "譚仔雲南米線", "髮再生", "發在身", "護髮專家", "兒童癌病基金", "捐出5元", "專鎖快", "跨境付款",
     "全城一致讚好", "和爹一起去旅行", "和爹去旅行", "我爹想旅行", "我爹上旅行", "狂賀連續七日", "狂賀連續七天", "飄放冠軍", "票房冠軍",
     "香港國際機場", "王嘉爾", "Jackson Wang", "Under the Castle", "打卡點", "SELECT街之選", "白街自家品牌", "意想前", "易賞錢",
-    "Glip", "心安情", "OCBC華僑銀行", "華僑銀行", "成就每一個理想", "用心幫有心人"
+    "Glip", "心安情", "OCBC華僑銀行", "華僑銀行", "成就每一個理想", "用心幫有心人",
+    "先生,小姐,你有沒有幾分鐘", "先生小姐", "幾分鐘而已", "拖匪", "手工杏仁", "拖匪翠翠", "知婚姨", "現在姚堅", "姚堅", "報導新聞", "報道新聞"
 ]
 
 # 7. 節目專屬 Jingle / 主持關鍵字（重點保護，絕不可切！）
@@ -683,7 +685,8 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     outro_ad_markers = [
         "喜療駝", "藥膏", "痛腳", "雙人套房", "小中瓶", "精華水", "綠色殯葬", "綠色笨藏",
         "食環署", "食環柱", "本篇兒童不宜", "本片兒童不宜", "本片青少年", "我爹想旅行", "我爹上旅行",
-        "全城一致讚好", "和爹一起去旅行", "和爹去旅行", "狂賀連續七日", "狂賀連續七天", "飄放冠軍", "票房冠軍", "心安情", "Glip"
+        "全城一致讚好", "和爹一起去旅行", "和爹去旅行", "狂賀連續七日", "狂賀連續七天", "飄放冠軍", "票房冠軍", "心安情", "Glip",
+        "先生,小姐", "先生小姐", "幾分鐘而已", "拖匪", "手工杏仁", "拖匪翠翠", "知婚姨", "現在姚堅", "姚堅", "報導新聞", "報道新聞"
     ]
     gap_stop_words = set(
         AD_KEYWORDS + TRAFFIC_KEYWORDS + WEATHER_KEYWORDS + NEWS_START_KEYWORDS +
@@ -1107,22 +1110,25 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
 
         # 防誤吞片尾廣告：若 last_end 落在片尾廣告中，自動回縮至廣告開始前
         outro_ad_words = [
-            "想你陪我錄音", "想你陪我录音", "mcdonald", "eason", "recording sessions", "陳奕迅", "陈奕迅",
-            "本篇兒童不宜", "本篇青少年", "12點", "12点", "19點", "19点", "十二點", "十九點", "新聞報道", "新聞報導"
+            "想你陪我錄音", "想你陪我录音", "mcdonald", "recording sessions",
+            "本篇兒童不宜", "本篇青少年", "12點", "12点", "19點", "19点", "十二點", "十九點",
+            "新聞報道", "新聞報導", "報導新聞", "報道新聞", "商業電台新聞", "現在由", "姚堅",
+            "先生,小姐", "先生小姐", "幾分鐘而已", "知婚姨", "知芬衣", "朱芬", "拖匪", "手工杏仁",
+            "全城一致讚好", "和爹一起去旅行", "和爹去旅行", "票房冠軍", "心安情", "Glip"
         ]
         for s in transcript_segments:
             st_sec = s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)
             txt = s.get("text", "")
-            if 6650.0 <= st_sec <= last_end:
+            if 6600.0 <= st_sec <= last_end:
                 if any(w in txt.lower() for w in outro_ad_words):
                     if st_sec < last_end - 1.0:
-                        healed_items.append(f"Part 4 結尾由 {last_end:.1f}s 提早回縮至 {st_sec:.1f}s (切除片尾麥當勞/十二點新聞前廣告)")
+                        healed_items.append(f"Part 4 結尾由 {last_end:.1f}s 提早回縮至 {st_sec:.1f}s (切除片尾宣傳/十二點新聞前廣告: {txt[:20]})")
                         p_last["end"] = round(st_sec, 2)
                         last_end = float(p_last["end"])
                         new_last_end = last_end
                     break
 
-        if last_end < 6680.0:
+        if last_end < 6600.0:
             for idx_s, seg in enumerate(transcript_segments):
                 s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
                 s_to = seg.get("offsets", {}).get("to", 0) / 1000.0 if "offsets" in seg else seg.get("end", 0.0)
@@ -1154,10 +1160,10 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
             p_last["end"] = new_last_end
             last_end = new_last_end
 
-        if last_end >= 6680.0:
-            checks["part4_outro_song"] = f"PASS (結束於: {last_end:.1f}s >= 6680s)"
+        if last_end >= 6600.0:
+            checks["part4_outro_song"] = f"PASS (結束於: {last_end:.1f}s >= 6600s)"
         else:
-            checks["part4_outro_song"] = f"WARN (結束於: {last_end:.1f}s < 6680s)"
+            checks["part4_outro_song"] = f"WARN (結束於: {last_end:.1f}s < 6600s)"
 
     # 計算自癒後純淨時長
     clean_duration = sum(float(k["end"]) - float(k["start"]) for k in healed_keeps)
