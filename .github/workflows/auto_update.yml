@@ -1,19 +1,8 @@
 name: Update All Podcasts
 
+# 已停用定時排程：避免在本地 AI 去廣告處理期間，GitHub Action 搶先抓取電台未去廣告原始音檔推送至 RSS
+# 如需手動測試可使用 workflow_dispatch 觸發
 on:
-  schedule:
-    # 第一次更新 (首輪)：香港時間 12:45 (UTC 04:45)
-    - cron: '45 4 * * 1-5'
-    
-    # 第一次更新 (次輪備份)：香港時間 13:00 (UTC 05:00)
-    - cron: '0 5 * * 1-5'
-    
-    # 第二次更新 (首輪)：香港時間 19:45 (UTC 11:45)
-    - cron: '45 11 * * 1-5'
-    
-    # 第二次更新 (次輪備份)：香港時間 20:00 (UTC 12:00)
-    - cron: '0 12 * * 1-5'
-    
   workflow_dispatch: 
 
 jobs:

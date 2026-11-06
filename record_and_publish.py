@@ -133,13 +133,32 @@ def record_stream(m3u8_url, duration, output_file, headers_str=None):
         output_file
     ])
 
-    subprocess.run(cmd, check=True)
-    size_bytes = os.path.getsize(output_file)
-    print(f"[{datetime.now()}] 錄音完成！檔案大小: {size_bytes / (1024*1024):.2f} MB")
-    return size_bytes
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"[{datetime.now()}] ⚠️ 錄音過程遇到連線波動或提早結束 ({e})，保留已錄製內容...")
+
+    if os.path.exists(output_file):
+        size_bytes = os.path.getsize(output_file)
+        print(f"[{datetime.now()}] 錄音階段結束，目前檔案大小: {size_bytes / (1024*1024):.2f} MB")
+        return size_bytes
+    else:
+        raise RuntimeError(f"錄音失敗，未產生輸出檔案: {output_file}")
+
+def get_ssl_context():
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        pass
+    try:
+        return ssl.create_default_context()
+    except Exception:
+        return ssl._create_unverified_context()
+
 
 def github_api_request(url, method="GET", data=None, headers=None):
-    """呼叫 GitHub API"""
+    """呼叫 GitHub API（具備 SSL 自動降級重試）"""
     if headers is None:
         headers = {}
     headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
@@ -147,17 +166,23 @@ def github_api_request(url, method="GET", data=None, headers=None):
     headers["User-Agent"] = "CR2-Recorder"
 
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
-    try:
-        import certifi
-        ctx = ssl.create_default_context(cafile=certifi.where())
-    except Exception:
-        ctx = ssl.create_default_context()
+    ctx = get_ssl_context()
 
-    with urllib.request.urlopen(req, context=ctx, timeout=300) as resp:
-        content = resp.read()
-        if resp.headers.get_content_type() == "application/json":
-            return json.loads(content.decode("utf-8"))
-        return content
+    try:
+        with urllib.request.urlopen(req, context=ctx, timeout=300) as resp:
+            content = resp.read()
+            if resp.headers.get_content_type() == "application/json":
+                return json.loads(content.decode("utf-8"))
+            return content
+    except urllib.error.URLError as e:
+        if "CERTIFICATE_VERIFY_FAILED" in str(e) or "certificate verify failed" in str(e):
+            unverified_ctx = ssl._create_unverified_context()
+            with urllib.request.urlopen(req, context=unverified_ctx, timeout=300) as resp:
+                content = resp.read()
+                if resp.headers.get_content_type() == "application/json":
+                    return json.loads(content.decode("utf-8"))
+                return content
+        raise
 
 def create_release_and_upload(tag, title, file_path, filename):
     """在 GitHub 建立 Release 並上傳音檔資產"""

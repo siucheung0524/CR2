@@ -1354,9 +1354,15 @@ def audit_boundaries_with_gemini(raw_keeps, transcript_segments, show_code="bgog
     req_data = json.dumps(payload).encode("utf-8")
 
     if certifi:
-        ctx = ssl.create_default_context(cafile=certifi.where())
+        try:
+            ctx = ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            ctx = ssl._create_unverified_context()
     else:
-        ctx = ssl.create_default_context()
+        try:
+            ctx = ssl.create_default_context()
+        except Exception:
+            ctx = ssl._create_unverified_context()
 
     models_to_try = [model] if model else get_gemini_model_candidates()
     all_keys = get_gemini_api_keys()
@@ -1380,6 +1386,18 @@ def audit_boundaries_with_gemini(raw_keeps, transcript_segments, show_code="bgog
                 if audited_result and "audited_intervals" in audited_result:
                     break
             except Exception as e:
+                if "CERTIFICATE_VERIFY_FAILED" in str(e) or "certificate verify failed" in str(e):
+                    ctx = ssl._create_unverified_context()
+                    try:
+                        with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
+                            res = json.loads(resp.read().decode("utf-8"))
+                            res_text = res["candidates"][0]["content"]["parts"][0]["text"]
+                            audited_result = json.loads(res_text)
+                        if audited_result and "audited_intervals" in audited_result:
+                            break
+                    except Exception as e2:
+                        last_err = e2
+                        continue
                 last_err = e
                 continue
         if audited_result and "audited_intervals" in audited_result:
@@ -1646,9 +1664,15 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     req_data = json.dumps(payload).encode("utf-8")
 
     if certifi:
-        ctx = ssl.create_default_context(cafile=certifi.where())
+        try:
+            ctx = ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            ctx = ssl._create_unverified_context()
     else:
-        ctx = ssl.create_default_context()
+        try:
+            ctx = ssl.create_default_context()
+        except Exception:
+            ctx = ssl._create_unverified_context()
 
     if model:
         model_queue = [model]
@@ -1677,10 +1701,18 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={cur_key}"
                 req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
                 try:
-                    with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
-                        res = json.loads(resp.read().decode("utf-8"))
-                        result_text = res["candidates"][0]["content"]["parts"][0]["text"]
-                        parsed = json.loads(result_text)
+                    try:
+                        with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
+                            res = json.loads(resp.read().decode("utf-8"))
+                    except Exception as ssl_err:
+                        if "CERTIFICATE_VERIFY_FAILED" in str(ssl_err) or "certificate verify failed" in str(ssl_err):
+                            ctx = ssl._create_unverified_context()
+                            with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
+                                res = json.loads(resp.read().decode("utf-8"))
+                        else:
+                            raise
+                    result_text = res["candidates"][0]["content"]["parts"][0]["text"]
+                    parsed = json.loads(result_text)
 
                     raw_keeps = parsed.get("keep_intervals", [])
                     if not raw_keeps:

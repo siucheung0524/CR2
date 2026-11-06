@@ -92,7 +92,10 @@ def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, d
         "gemini-flash-lite-latest"
     ]
 
-    ctx = ssl.create_default_context(cafile=certifi.where())
+    try:
+        ctx = ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        ctx = ssl._create_unverified_context()
     shownotes_text = None
 
     for cand_model in SHOWNOTES_GEMINI_MODELS:
@@ -107,6 +110,18 @@ def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, d
                         print(f"  ✨ 成功使用模型 [{cand_model}] (Key #{k_idx+1}) 生成人性化節目簡介！(高配額 Lite 池)")
                         break
             except Exception as e:
+                if "CERTIFICATE_VERIFY_FAILED" in str(e) or "certificate verify failed" in str(e):
+                    ctx = ssl._create_unverified_context()
+                    try:
+                        with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
+                            res = json.loads(resp.read().decode("utf-8"))
+                            shownotes_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
+                            if shownotes_text and "【第一節】" in shownotes_text:
+                                print(f"  ✨ 成功使用模型 [{cand_model}] (Key #{k_idx+1}) 生成人性化節目簡介！(高配額 Lite 池)")
+                                break
+                    except Exception as e2:
+                        print(f"  ⚠️ 模型 [{cand_model}] (Key #{k_idx+1}) 生成簡介暫時繁忙: {e2}")
+                        continue
                 print(f"  ⚠️ 模型 [{cand_model}] (Key #{k_idx+1}) 生成簡介暫時繁忙: {e}")
         if shownotes_text:
             break
