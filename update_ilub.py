@@ -1,8 +1,13 @@
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
 import time
 import re
 import os
 import urllib.parse
+import urllib.request
+import ssl
 from datetime import datetime, timedelta, timezone
 
 # --- 配置資訊 ---
@@ -11,19 +16,50 @@ SHOW_PAGE = "https://hkfm903.live/?show=%E8%81%96%E8%89%BE%E7%B2%92LaLaLaLa"
 RSS_FILE = "ilub.xml"
 GAS_PROXY_URL = "https://script.google.com/macros/s/AKfycbxy7W2J6pTtUCjghmXQ-HMYf6T-h2vLeT5NizNvaTrMUyAuYLnV83R13iLMrYbYrP3a/exec"
 
+def get_url_text(url, timeout=20):
+    if requests:
+        return requests.get(url, timeout=timeout).text
+    ctx = ssl._create_unverified_context()
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, context=ctx, timeout=timeout) as resp:
+        return resp.read().decode("utf-8", errors="ignore")
+
 def fetch_html_via_proxy(url):
     proxy_url = f"{GAS_PROXY_URL}?url={urllib.parse.quote(url)}"
     try:
-        r = requests.get(proxy_url, timeout=20)
-        return r.text
-    except: return ""
+        return get_url_text(proxy_url, timeout=20)
+    except:
+        return ""
 
 def has_github_release(date_str):
+    url = f"https://api.github.com/repos/siucheung0524/CR2/releases/tags/ilub-{date_str}"
+    if requests:
+        try:
+            r = requests.get(url, timeout=5)
+            return r.status_code == 200
+        except:
+            return False
     try:
-        r = requests.get(f"https://api.github.com/repos/siucheung0524/CR2/releases/tags/ilub-{date_str}", timeout=5)
-        return r.status_code == 200
+        ctx = ssl._create_unverified_context()
+        req = urllib.request.Request(url, headers={"User-Agent": "CR2-Check"})
+        with urllib.request.urlopen(req, context=ctx, timeout=5) as resp:
+            return resp.status == 200
     except:
         return False
+
+def is_in_rss(date_str):
+    if not os.path.exists(RSS_FILE): return False
+    with open(RSS_FILE, "r", encoding="utf-8") as f: return f"ilub-{date_str}" in f.read()
+
+def has_clean_in_rss(date_str):
+    if not os.path.exists(RSS_FILE): return False
+    with open(RSS_FILE, "r", encoding="utf-8") as f: content = f.read()
+    # 判斷是否已為本地上傳之乾淨版連結 (Cloudflare proxy 或 release download)
+    pattern = rf'<guid[^>]*>ilub-{date_str}</guid>[\s\S]*?<enclosure[^>]*url="([^"]+)"'
+    match = re.search(pattern, content)
+    if match and ("workers.dev" in match.group(1) or "releases/download" in match.group(1)):
+        return True
+    return False
 
 def check_and_update():
     hk_tz = timezone(timedelta(hours=8))
@@ -34,7 +70,7 @@ def check_and_update():
         target_date = now_hk - timedelta(days=i)
         date_str = target_date.strftime("%Y%m%d")
         if target_date.weekday() >= 5: continue
-        if is_in_rss(date_str) or has_github_release(date_str): continue
+        if has_github_release(date_str) or is_in_rss(date_str): continue
 
         print(f"[{PODCAST_NAME}] 補抓過去日期: {date_str}")
         html = fetch_html_via_proxy(SHOW_PAGE)
@@ -52,8 +88,12 @@ def check_and_update():
     if target_date.weekday() >= 5:
         return
         
-    if is_in_rss(date_str) or has_github_release(date_str):
-        print(f"[{PODCAST_NAME}] 今天的集數 {date_str} 已經在 RSS 或已有本地去廣告 Release，略過外部抓取。")
+    if has_github_release(date_str) or has_clean_in_rss(date_str):
+        print(f"[{PODCAST_NAME}] 今天的集數 {date_str} 已有本地去廣告純淨版 (Release/RSS)，雲端略過兜底。")
+        return
+        
+    if is_in_rss(date_str):
+        print(f"[{PODCAST_NAME}] 今天的集數 {date_str} 已經在 RSS 中，略過外部抓取。")
         return
         
     broadcast_time = 1915
@@ -61,6 +101,10 @@ def check_and_update():
     # 輪詢檢查今天新集數 (最長輪詢 30 次，每次間隔 60 秒，共約 30 分鐘)
     max_attempts = 30
     for attempt in range(max_attempts):
+        if has_github_release(date_str) or has_clean_in_rss(date_str):
+            print(f"[{PODCAST_NAME}] 偵測到本地已發布純淨版，終止雲端兜底抓取。")
+            break
+
         current_time = datetime.now(hk_tz)
         if int(current_time.strftime("%H%M")) < broadcast_time:
             print(f"[{PODCAST_NAME}] 當前時間 {current_time.strftime('%H:%M')} 尚未到上架時間 {broadcast_time}，今天先跳過。")
@@ -83,10 +127,6 @@ def check_and_update():
                 time.sleep(60)
             else:
                 print(f"[{PODCAST_NAME}] 已達到最大嘗試次數，今日未找到新連結。")
-
-def is_in_rss(date_str):
-    if not os.path.exists(RSS_FILE): return False
-    with open(RSS_FILE, "r", encoding="utf-8") as f: return f"ilub-{date_str}" in f.read()
 
 def add_to_rss(url, date_str, date_obj):
     with open(RSS_FILE, "r", encoding="utf-8") as f: content = f.read()

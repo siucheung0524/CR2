@@ -45,6 +45,7 @@ SHOWS = {
         "rss_file": "rss.xml",
         "guid_prefix": "bgog-",
         "default_duration": 6960, # 116 分鐘 (10:07 -> 12:03)
+        "broadcast_end_time": "12:15",
         "time_str": "12:05:00",
         "itunes_duration": "01:56:00"
     },
@@ -55,6 +56,7 @@ SHOWS = {
         "rss_file": "ilub.xml",
         "guid_prefix": "ilub-",
         "default_duration": 6960, # 116 分鐘 (17:07 -> 19:03)
+        "broadcast_end_time": "19:15",
         "time_str": "19:05:00",
         "itunes_duration": "01:56:00"
     }
@@ -517,6 +519,17 @@ def main():
         date_str = now_hk.strftime("%Y%m%d")
         date_obj = now_hk
         duration = args.duration or show_cfg["default_duration"]
+        tag = f"{show_cfg['guid_prefix']}{date_str}"
+
+        # 0. 檢查今天是否已經發布過 Release，避免喚醒或重開機重複執行
+        try:
+            rel_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/tags/{tag}"
+            existing_rel = github_api_request(rel_url)
+            if existing_rel and "id" in existing_rel:
+                print(f"[{datetime.now()}] ✨ 今日純淨版集數 ({tag}) 已經成功發布於 GitHub Releases，略過重複執行！")
+                return
+        except Exception:
+            pass
 
         print("=" * 60)
         print(f"開始執行節目錄製排程: {show_cfg['name']}")
@@ -524,46 +537,58 @@ def main():
         print(f"錄音時長: {duration} 秒 ({duration/60:.1f} 分鐘)")
         print("=" * 60)
 
-        # 1. 取得串流網址
-        if args.stream_url:
-            stream_url = args.stream_url
-            headers_str = None
-        else:
-            stream_url, headers_str = get_stream_url(show_cfg["channel"])
+        # 檢查是否已過首播結束時間（例如休眠喚醒或開機補跑）
+        end_time_str = show_cfg.get("broadcast_end_time", "12:15")
+        end_h, end_m = map(int, end_time_str.split(":"))
+        is_past_broadcast = (now_hk.hour > end_h) or (now_hk.hour == end_h and now_hk.minute >= end_m)
 
-        # 2. 錄製音檔至本地原始母帶檔（.raw.m4a，作為永久純淨來源，永不覆蓋）
         raw_filename = f"{show_cfg['guid_prefix']}{date_str}.raw.m4a"
         raw_path = os.path.join(temp_dir, raw_filename)
         asset_filename = f"{show_cfg['guid_prefix']}{date_str}.m4a"
         output_path = os.path.join(temp_dir, asset_filename)
 
-        recording_ok = False
-        try:
-            file_size = record_stream(stream_url, duration, raw_path, headers_str=headers_str)
-            from ad_remover import get_audio_duration
-            actual_dur = get_audio_duration(raw_path)
-            # 判斷錄音完整度：實際時長需達到預期時長的 85% 以上（正常 116 分鐘節目約需 >= 98 分鐘）
-            if actual_dur >= (duration * 0.85):
-                recording_ok = True
-                print(f"[{datetime.now()}] ✅ 即時串流錄音完整，長度: {actual_dur:.1f} 秒 ({actual_dur/60:.1f} 分鐘)")
-            else:
-                print(f"[{datetime.now()}] ⚠️ 即時串流錄音時長不足 ({actual_dur:.1f}s / 預期 {duration}s)，可能遇到中途斷線！")
-        except Exception as e:
-            print(f"[{datetime.now()}] ⚠️ 即時串流錄音發生異常: {e}")
-
-        # 若即時錄音中斷或失敗，自動啟動「後備救援方案」：從網路抓取完整官方存檔母帶
-        if not recording_ok:
-            print(f"[{datetime.now()}] 🚀 觸發自動後備救援：嘗試從 hkfm903.live 網路存檔下載完整母帶...")
+        if is_past_broadcast and not args.stream_url:
+            print(f"[{datetime.now()}] 💡 檢測到目前時間 ({now_hk.strftime('%H:%M')}) 已過首播時段 ({end_time_str})，跳過即時串流錄音，直接從網路官方存檔下載今日完整母帶...")
             fallback_success = fetch_archive_from_web(show_cfg, date_str, raw_path, max_attempts=5, delay_sec=60)
-            if fallback_success:
-                file_size = os.path.getsize(raw_path)
-                print(f"[{datetime.now()}] ✅ 後備救援成功替代！母帶就緒，繼續執行後續 AI 去廣告處理。")
+            if not fallback_success:
+                raise RuntimeError("已過首播時間且無法從網路存檔取得今日母帶，終止執行。")
+            file_size = os.path.getsize(raw_path)
+        else:
+            # 1. 取得串流網址
+            if args.stream_url:
+                stream_url = args.stream_url
+                headers_str = None
             else:
-                if os.path.exists(raw_path) and os.path.getsize(raw_path) > 10 * 1024 * 1024:
-                    print(f"[{datetime.now()}] ⚠️ 網路存檔暫未取得，退回使用本地部分錄音檔繼續處理...")
-                    file_size = os.path.getsize(raw_path)
+                stream_url, headers_str = get_stream_url(show_cfg["channel"])
+
+            # 2. 錄製音檔至本地原始母帶檔（.raw.m4a，作為永久純淨來源，永不覆蓋）
+            recording_ok = False
+            try:
+                file_size = record_stream(stream_url, duration, raw_path, headers_str=headers_str)
+                from ad_remover import get_audio_duration
+                actual_dur = get_audio_duration(raw_path)
+                # 判斷錄音完整度：實際時長需達到預期時長的 85% 以上（正常 116 分鐘節目約需 >= 98 分鐘）
+                if actual_dur >= (duration * 0.85):
+                    recording_ok = True
+                    print(f"[{datetime.now()}] ✅ 即時串流錄音完整，長度: {actual_dur:.1f} 秒 ({actual_dur/60:.1f} 分鐘)")
                 else:
-                    raise RuntimeError("即時錄音中斷且後備網路存檔抓取失敗，中止本次發布。")
+                    print(f"[{datetime.now()}] ⚠️ 即時串流錄音時長不足 ({actual_dur:.1f}s / 預期 {duration}s)，可能遇到中途斷線！")
+            except Exception as e:
+                print(f"[{datetime.now()}] ⚠️ 即時串流錄音發生異常: {e}")
+
+            # 若即時錄音中斷或失敗，自動啟動「後備救援方案」：從網路抓取完整官方存檔母帶
+            if not recording_ok:
+                print(f"[{datetime.now()}] 🚀 觸發自動後備救援：嘗試從 hkfm903.live 網路存檔下載完整母帶...")
+                fallback_success = fetch_archive_from_web(show_cfg, date_str, raw_path, max_attempts=5, delay_sec=60)
+                if fallback_success:
+                    file_size = os.path.getsize(raw_path)
+                    print(f"[{datetime.now()}] ✅ 後備救援成功替代！母帶就緒，繼續執行後續 AI 去廣告處理。")
+                else:
+                    if os.path.exists(raw_path) and os.path.getsize(raw_path) > 10 * 1024 * 1024:
+                        print(f"[{datetime.now()}] ⚠️ 網路存檔暫未取得，退回使用本地部分錄音檔繼續處理...")
+                        file_size = os.path.getsize(raw_path)
+                    else:
+                        raise RuntimeError("即時錄音中斷且後備網路存檔抓取失敗，中止本次發布。")
 
         # 預設先複製一份至 output_path 以防跳過去廣告
         shutil.copy2(raw_path, output_path)

@@ -1,8 +1,21 @@
 name: Update All Podcasts
 
-# 已停用定時排程：避免在本地 AI 去廣告處理期間，GitHub Action 搶先抓取電台未去廣告原始音檔推送至 RSS
-# 如需手動測試可使用 workflow_dispatch 觸發
+# 雲端自動兜底排程：當本地電腦未開機或未成功更新時之災難備援 (Disaster Recovery Fallback)
+# 預留足夠空檔讓本地電腦優先執行 AI 雙重去廣告，僅在本地未發布時作為最後防線啟動
 on:
+  schedule:
+    # Bad Girl 大過佬 雲端兜底 (節目 12:03 結束，預留約 2 小時讓本地電腦 AI 處理)：
+    # 首輪兜底：香港時間 14:00 (UTC 06:00)
+    - cron: '0 6 * * 1-5'
+    # 次輪備用：香港時間 14:30 (UTC 06:30)
+    - cron: '30 6 * * 1-5'
+
+    # 聖艾粒LaLaLaLa 雲端兜底 (節目 19:03 結束，預留約 2 小時讓本地電腦 AI 處理)：
+    # 首輪兜底：香港時間 21:00 (UTC 13:00)
+    - cron: '0 13 * * 1-5'
+    # 次輪備用：香港時間 21:30 (UTC 13:30)
+    - cron: '30 13 * * 1-5'
+
   workflow_dispatch: 
 
 jobs:
