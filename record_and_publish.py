@@ -40,6 +40,7 @@ GITHUB_TOKEN, GITHUB_REPO, CLOUDFLARE_WORKER_URL = load_env()
 SHOWS = {
     "bgog": {
         "name": "Bad Girl 大過佬",
+        "archive_name": "Bad Girl大過佬",
         "channel": "903",
         "rss_file": "rss.xml",
         "guid_prefix": "bgog-",
@@ -49,6 +50,7 @@ SHOWS = {
     },
     "ilub": {
         "name": "聖艾粒LaLaLaLa",
+        "archive_name": "聖艾粒LaLaLaLa",
         "channel": "903",
         "rss_file": "ilub.xml",
         "guid_prefix": "ilub-",
@@ -155,6 +157,76 @@ def get_ssl_context():
         return ssl.create_default_context()
     except Exception:
         return ssl._create_unverified_context()
+
+def fetch_archive_from_web(show_cfg, date_str, output_path, max_attempts=5, delay_sec=60):
+    """
+    後備救援機制：當即時廣播錄音失敗或中斷時，自動從 hkfm903.live 抓取官方完整 2 小時錄音檔，
+    並轉碼封裝為 raw.m4a 供後續 AI 去廣告處理。
+    支援直接連線與 Google Apps Script Proxy 雙重備援。
+    """
+    archive_name = show_cfg.get("archive_name", show_cfg["name"].replace(" ", ""))
+    show_url = f"https://hkfm903.live/?show={urllib.parse.quote(archive_name)}"
+    gas_proxy_url = "https://script.google.com/macros/s/AKfycbxy7W2J6pTtUCjghmXQ-HMYf6T-h2vLeT5NizNvaTrMUyAuYLnV83R13iLMrYbYrP3a/exec"
+    ctx = get_ssl_context()
+
+    ffmpeg_bin = "/opt/homebrew/bin/ffmpeg"
+    if not os.path.exists(ffmpeg_bin):
+        ffmpeg_bin = "ffmpeg"
+
+    for attempt in range(max_attempts):
+        print(f"[{datetime.now()}] 🔍 [後備救援] 第 {attempt+1}/{max_attempts} 次尋找 {archive_name} ({date_str}) 官方完整網路存檔...")
+        html = ""
+        # 1. 先嘗試直接抓取 HTML
+        try:
+            req = urllib.request.Request(show_url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"})
+            with urllib.request.urlopen(req, context=ctx, timeout=20) as resp:
+                html = resp.read().decode("utf-8", errors="ignore")
+        except Exception as e:
+            print(f"[{datetime.now()}] ⚠️ 直接連線 hkfm903.live 失敗 ({e})，嘗試使用 GAS Proxy...")
+            try:
+                proxy_req_url = f"{gas_proxy_url}?url={urllib.parse.quote(show_url)}"
+                req = urllib.request.Request(proxy_req_url, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, context=ctx, timeout=20) as resp:
+                    html = resp.read().decode("utf-8", errors="ignore")
+            except Exception as pe:
+                print(f"[{datetime.now()}] ⚠️ GAS Proxy 抓取亦失敗: {pe}")
+
+        if html:
+            # 尋找包含 date_str 的 aac 連結
+            pattern = rf'src="([^"]*{date_str}[^"]*\.aac)"'
+            match = re.search(pattern, html)
+            if match:
+                audio_url = match.group(1)
+                if audio_url.startswith("/"):
+                    audio_url = "https://hkfm903.live" + audio_url
+                print(f"[{datetime.now()}] 🎯 成功尋獲網路完整音檔連結: {audio_url}")
+                print(f"[{datetime.now()}] 正在下載並轉裝為本地原始母帶檔: {output_path}...")
+
+                cmd = [
+                    ffmpeg_bin, "-y",
+                    "-loglevel", "warning",
+                    "-nostats",
+                    "-i", audio_url,
+                    "-c", "copy",
+                    "-movflags", "+faststart",
+                    output_path
+                ]
+                res = subprocess.run(cmd)
+                if res.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 10 * 1024 * 1024:
+                    size_mb = os.path.getsize(output_path) / (1024 * 1024)
+                    print(f"[{datetime.now()}] 🎉 後備救援下載成功！檔案大小: {size_mb:.2f} MB")
+                    return True
+                else:
+                    print(f"[{datetime.now()}] ⚠️ 音檔下載失敗或檔案異常，準備重試...")
+            else:
+                print(f"[{datetime.now()}] 官方網路存檔可能尚未生成上架 (通常於節目結束後 15~30 分鐘內發布)...")
+
+        if attempt < max_attempts - 1:
+            print(f"[{datetime.now()}] 等待 {delay_sec} 秒後再次查詢...")
+            time.sleep(delay_sec)
+
+    return False
+
 
 
 def github_api_request(url, method="GET", data=None, headers=None):
@@ -465,7 +537,34 @@ def main():
         asset_filename = f"{show_cfg['guid_prefix']}{date_str}.m4a"
         output_path = os.path.join(temp_dir, asset_filename)
 
-        file_size = record_stream(stream_url, duration, raw_path, headers_str=headers_str)
+        recording_ok = False
+        try:
+            file_size = record_stream(stream_url, duration, raw_path, headers_str=headers_str)
+            from ad_remover import get_audio_duration
+            actual_dur = get_audio_duration(raw_path)
+            # 判斷錄音完整度：實際時長需達到預期時長的 85% 以上（正常 116 分鐘節目約需 >= 98 分鐘）
+            if actual_dur >= (duration * 0.85):
+                recording_ok = True
+                print(f"[{datetime.now()}] ✅ 即時串流錄音完整，長度: {actual_dur:.1f} 秒 ({actual_dur/60:.1f} 分鐘)")
+            else:
+                print(f"[{datetime.now()}] ⚠️ 即時串流錄音時長不足 ({actual_dur:.1f}s / 預期 {duration}s)，可能遇到中途斷線！")
+        except Exception as e:
+            print(f"[{datetime.now()}] ⚠️ 即時串流錄音發生異常: {e}")
+
+        # 若即時錄音中斷或失敗，自動啟動「後備救援方案」：從網路抓取完整官方存檔母帶
+        if not recording_ok:
+            print(f"[{datetime.now()}] 🚀 觸發自動後備救援：嘗試從 hkfm903.live 網路存檔下載完整母帶...")
+            fallback_success = fetch_archive_from_web(show_cfg, date_str, raw_path, max_attempts=5, delay_sec=60)
+            if fallback_success:
+                file_size = os.path.getsize(raw_path)
+                print(f"[{datetime.now()}] ✅ 後備救援成功替代！母帶就緒，繼續執行後續 AI 去廣告處理。")
+            else:
+                if os.path.exists(raw_path) and os.path.getsize(raw_path) > 10 * 1024 * 1024:
+                    print(f"[{datetime.now()}] ⚠️ 網路存檔暫未取得，退回使用本地部分錄音檔繼續處理...")
+                    file_size = os.path.getsize(raw_path)
+                else:
+                    raise RuntimeError("即時錄音中斷且後備網路存檔抓取失敗，中止本次發布。")
+
         # 預設先複製一份至 output_path 以防跳過去廣告
         shutil.copy2(raw_path, output_path)
 
