@@ -103,7 +103,7 @@ def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, d
             try:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={cur_key}"
                 req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
-                with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
+                with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=60) as resp:
                     res = json.loads(resp.read().decode("utf-8"))
                     shownotes_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
                     if shownotes_text and "【第一節】" in shownotes_text:
@@ -113,7 +113,7 @@ def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, d
                 if "CERTIFICATE_VERIFY_FAILED" in str(e) or "certificate verify failed" in str(e):
                     ctx = ssl._create_unverified_context()
                     try:
-                        with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
+                        with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=60) as resp:
                             res = json.loads(resp.read().decode("utf-8"))
                             shownotes_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
                             if shownotes_text and "【第一節】" in shownotes_text:

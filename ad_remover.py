@@ -21,6 +21,7 @@ import subprocess
 import shutil
 import time
 import urllib.request
+import urllib.error
 import ssl
 from datetime import timedelta
 
@@ -41,12 +42,15 @@ if not os.path.exists(WHISPER_BIN):
 LARGE_MODEL = os.path.join(SCRIPT_DIR, "models", "ggml-large-v3-turbo.bin")
 DEFAULT_MODEL = LARGE_MODEL if os.path.exists(LARGE_MODEL) else os.path.join(SCRIPT_DIR, "models", "ggml-base.bin")
 
-# 1. 新聞狀態機關鍵字
+# 1. 新聞狀態機關鍵字（含簡繁體 Whisper 常見識別變體）
 NEWS_START_KEYWORDS = [
-    "新聞報導", "新聞報道", "商業電台新聞", "即是七九零三", "即測903 新聞", "叱咤903 新聞"
+    "新聞報導", "新聞報道", "商業電台新聞", "即是七九零三", "即測903 新聞", "叱咤903 新聞",
+    "新闻报导", "新闻报道", "商业电台新闻", "报道新闻", "报导新闻", "北陀新闻", "现在由"
 ]
 NEWS_END_KEYWORDS = [
-    "這節新聞播出完", "新聞報道完", "新聞報導完", "這節新聞播出", "報道完畢", "報導完畢", "這節新聞播完"
+    "這節新聞播出完", "新聞報道完", "新聞報導完", "這節新聞播出", "報道完畢", "報導完畢", "這節新聞播完",
+    "這一節新聞報道完", "这节新闻播出完", "这节新闻报道完", "这节新闻报导完", "新闻报道完", "新闻报导完",
+    "报道完毕", "报导完毕", "这节新闻播完", "这一节新闻报道完", "这一节新闻"
 ]
 
 # 2. 交通消息關鍵字
@@ -70,7 +74,9 @@ PSA_KEYWORDS = [
     "積金局", "民政事務總署", "民政事務處", "廉政公署", "香港國際鐘表展", "貿發局", "展覽會", "免費入場",
     "食安中心", "河土", "河套", "創科", "創新合作區", "禁煙", "控煙", "吸煙", "定額罰款",
     "選舉管理委員會", "選管會", "區議會", "委員會", "諮詢", "2891", "291-1001", "EAC.HK", "抽獎", "遊戲規則", "得獎",
-    "食安中心提提你", "升級有型食屍", "加入升級更有型", "金管局", "防騙"
+    "食安中心提提你", "升級有型食屍", "加入升級更有型", "金管局", "防騙",
+    "选举委员会", "选举管理委员会", "選舉委員會", "香港赛马会", "香港賽馬會", "香港蔡卖会", "香港蔡賣會",
+    "慈善信托基金", "慈善信託基金", "流感疫苗", "流感针", "流感針", "季节性流感", "季節性流感", "卫生署"
 ]
 
 # 5. 商台台呼、節目宣傳與熱線
@@ -86,7 +92,8 @@ STATION_PROMOS = [
     "美味開餐", "美食嘉年華", "香港美食嘉年華",
     "知芬衣", "知婚姨", "朱芬", "知多知那麼多", "知多知咁多", "Centerminia", "善男信女", "鍾雪瑩", "楊偉倫",
     "星矮粒", "聖艾粒", "下午五至七", "啦啦星之中八拍", "黃先生想你點", "點話點好",
-    "先生小姐", "先生,小姐", "拖匪", "手工杏仁", "拖匪翠翠"
+    "先生小姐", "先生,小姐", "拖匪", "手工杏仁", "拖匪翠翠",
+    "心跳行星", "八五二零", "即上各大音乐平台", "这一秒 新一秒"
 ]
 
 # 6. 商業特約廣告詞庫
@@ -112,13 +119,17 @@ AD_KEYWORDS = [
     "全城一致讚好", "和爹一起去旅行", "和爹去旅行", "我爹想旅行", "我爹上旅行", "狂賀連續七日", "狂賀連續七天", "飄放冠軍", "票房冠軍",
     "香港國際機場", "王嘉爾", "Jackson Wang", "Under the Castle", "打卡點", "SELECT街之選", "白街自家品牌", "意想前", "易賞錢",
     "Glip", "心安情", "OCBC華僑銀行", "華僑銀行", "成就每一個理想", "用心幫有心人",
-    "先生,小姐,你有沒有幾分鐘", "先生小姐", "幾分鐘而已", "拖匪", "手工杏仁", "拖匪翠翠", "知婚姨", "現在姚堅", "姚堅", "報導新聞", "報道新聞"
+    "先生,小姐,你有沒有幾分鐘", "先生小姐", "幾分鐘而已", "拖匪", "手工杏仁", "拖匪翠翠", "知婚姨", "現在姚堅", "姚堅", "報導新聞", "報道新聞",
+    "昂坪360", "昂坪 360", "全景画", "全景畫", "水晶缆车", "水晶纜車", "一田購物", "來一田", "Mia Cucina", "Mia Katrina",
+    "煤氣煮食爐", "煤气", "煤氣", "The Club", "ASCHA", "張慈浩", "网上投保", "網上投保", "保单契约", "保單契約",
+    "不用驗身", "不用验身", "有三高", "完整條款", "完整条款", "獨立投保", "独立投保",
+    "OCBC", "華僑銀行", "华翘银行", "財富管理", "财富管理", "成就理想", "追寻理想", "追尋理想", "可靠的伙伴", "可靠的夥伴", "用心帮", "用心幫", "梦想要落地", "夢想要落地", "创造更多这样的旅程"
 ]
 
 # 7. 節目專屬 Jingle / 主持關鍵字（重點保護，絕不可切！）
 PROGRAM_JINGLE_KEYWORDS = [
-    "bad girl", "大過佬", "來大笑代替上路", "完美阿正", "笑爆嘴", "elsie", "alsie", "l.c", "小姐, l.c",
-    "你公司最討厭", "最討厭的甚麼", "最討厭的是甚麼", "帶過老", "大過老", "代替上路",
+    "bad girl", "baggirl", "大過佬", "來大笑代替上路", "完美阿正", "笑爆嘴", "elsie", "elsi", "alsie", "l.c", "小姐, l.c",
+    "你公司最討厭", "最討厭的甚麼", "最討厭的是甚麼", "帶過老", "大過老", "大过老", "代替上路",
     "大明星殺手", "即日上映", "大哥, 人生當中", "人生當中", "最悲的事", "最悲嘅事", "最悲", "早點睡吧", "戴眼鏡",
     "能力測試", "探職員", "不要叫我大哥", "叫我怕你",
     "cls", "CLS", "水樓cls", "客席嘉賓", "客戚嘉賓",
@@ -273,7 +284,15 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
         # 1. 檢查整點新聞破口 (Top-of-the-hour break)
         # 嚴格限制：新聞只會出現在整點（50~65 分鐘 / 3000s~3900s，以及節目結尾 110~116 分鐘 / 6600s~6960s）
         is_in_news_window = (3000.0 <= f_sec <= 3900.0) or (f_sec >= 6600.0)
-        is_news_start = is_in_news_window and ("商業電台新聞" in text or "報道新聞" in text or "現在由" in text or "報導新聞" in text or ("新聞" in text and not any(k in text for k in NEWS_END_KEYWORDS)) or (f_sec >= 6780.0 and any(k in text for k in ["12點", "19點", "十二點", "十九點", "驗車", "香港驗車"])))
+        news_anchor_triggers = (
+            "商業電台新聞", "商业电台新闻", "報道新聞", "报道新闻", "報導新聞", "报导新闻",
+            "現在由", "现在由", "北陀新聞", "北陀新闻", "姚堅報道", "摇坚报道"
+        )
+        is_news_start = is_in_news_window and (
+            any(k in text for k in news_anchor_triggers) or
+            (("新聞" in text or "新闻" in text) and not any(k in text for k in NEWS_END_KEYWORDS)) or
+            (f_sec >= 6780.0 and any(k in text for k in ["12點", "12点", "19點", "19点", "十二點", "十九點", "驗車", "香港驗車"]))
+        )
         is_news_end = is_in_news_window and any(k in text for k in NEWS_END_KEYWORDS)
 
         if (is_news_start or is_news_end) and not in_break:
@@ -493,14 +512,73 @@ HALLUCINATION_PATTERNS = [
     "中文字幕", "感謝觀看", "感谢观看", "謝謝觀看", "谢谢观看", "Amara.org"
 ]
 
-# 候選 Gemini 旗艦 Flash 模型池（首選推理能力與長文本結構辨識最佳的 gemini-3.6-flash）
+# 候選 Gemini 旗艦 Flash 模型池（僅保留實測高可用、無長期 Hang 機之 Flash 模型）
 DEFAULT_GEMINI_MODELS = [
+    "gemini-3-flash-preview",
     "gemini-3.6-flash",
-    "gemini-3.8-flash",
-    "gemini-3.5-flash",
-    "gemini-flash-latest"
+    "gemini-3.5-flash"
 ]
 GEMINI_STATE_FILE = os.path.join(SCRIPT_DIR, ".gemini_model_state.json")
+
+
+def _create_gemini_ssl_context():
+    """建立 Gemini API HTTPS 憑證上下文（優先使用 certifi，失敗時回退系統/寬鬆模式）"""
+    if certifi:
+        try:
+            return ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            return ssl._create_unverified_context()
+    try:
+        return ssl.create_default_context()
+    except Exception:
+        return ssl._create_unverified_context()
+
+
+def _call_gemini_json(model_name, api_key, req_data, timeout=120, ctx=None):
+    """調用 Gemini generateContent API 並解析 JSON 回應（含 SSL 回退與 503 短暫退避重試）"""
+    if ctx is None:
+        ctx = _create_gemini_ssl_context()
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+
+    def _do_open(ssl_ctx):
+        req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, data=req_data, context=ssl_ctx, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    for attempt in range(2):
+        try:
+            res = _do_open(ctx)
+            break
+        except urllib.error.HTTPError as http_err:
+            if http_err.code == 503 and attempt == 0:
+                time.sleep(1.5)
+                continue
+            raise
+        except Exception as err:
+            if "CERTIFICATE_VERIFY_FAILED" in str(err) or "certificate verify failed" in str(err):
+                ctx = ssl._create_unverified_context()
+                res = _do_open(ctx)
+                break
+            raise
+
+    result_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
+    if result_text.startswith("```"):
+        result_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", result_text, flags=re.IGNORECASE | re.DOTALL)
+    return json.loads(result_text), ctx
+
+
+def _extract_gemini_intervals(parsed, key_name):
+    """將 Gemini 回傳的 dict 或 list JSON 統一正規化為區間清單"""
+    if isinstance(parsed, dict):
+        items = parsed.get(key_name, [])
+        return items if isinstance(items, list) else []
+    if isinstance(parsed, list):
+        if len(parsed) == 1 and isinstance(parsed[0], dict) and key_name in parsed[0]:
+            items = parsed[0].get(key_name, [])
+            return items if isinstance(items, list) else []
+        if all(isinstance(x, dict) and ("start" in x or "refined_start" in x) for x in parsed):
+            return parsed
+    return []
 
 
 def get_gemini_model_candidates():
@@ -680,21 +758,46 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         "903FORSTAR", "All-Star", "籃球賽", "男童賽", "古天樂", "古天駱", "歌星勇士隊", "世界航空",
         "跳島遊", "跳渡游", "有誰共鳴", "有谁共鸣", "此時此刻", "此时此刻", "50881903", "50-881-903",
         "專業推介", "专业推介", "新上榜", "三甲歌", "三甲位置", "冠軍作品", "冠军作品", "Good morning",
-        "晚上九至十", "同你流汗", "體育資訊"
+        "晚上九至十", "同你流汗", "體育資訊", "心跳行星", "八五二零", "這一秒 新一秒", "这一秒 新一秒"
     ]
     outro_ad_markers = [
         "喜療駝", "藥膏", "痛腳", "雙人套房", "小中瓶", "精華水", "綠色殯葬", "綠色笨藏",
         "食環署", "食環柱", "本篇兒童不宜", "本片兒童不宜", "本片青少年", "我爹想旅行", "我爹上旅行",
         "全城一致讚好", "和爹一起去旅行", "和爹去旅行", "狂賀連續七日", "狂賀連續七天", "飄放冠軍", "票房冠軍", "心安情", "Glip",
-        "先生,小姐", "先生小姐", "幾分鐘而已", "拖匪", "手工杏仁", "拖匪翠翠", "知婚姨", "現在姚堅", "姚堅", "報導新聞", "報道新聞"
+        "先生,小姐", "先生小姐", "幾分鐘而已", "拖匪", "手工杏仁", "拖匪翠翠", "知婚姨", "現在姚堅", "姚堅", "報導新聞", "報道新聞",
+        "一田購物", "Mia Cucina", "Mia Katrina", "名氣家", "煤氣煮食爐", "The Club", "現在搖堅", "现在摇坚", "摇坚报道"
+    ]
+    shared_ad_extras = [
+        "天氣預測", "天氣預算", "天气预测", "天气预算", "流感", "皇家加勒比", "十方法師", "萬寧", "護髮", "打針", "防流感",
+        "青衣城", "清衣城", "國際歌迷會", "各大音樂平台", "各大音乐平台", "輸血服務中心", "紅十字會", "通訊局", "coms-auth",
+        "選舉委員會", "选举委员会", "选举管理委员会", "香港賽馬會", "香港赛马会", "香港蔡賣會", "香港蔡卖会",
+        "昂坪360", "昂坪 360", "全景畫", "全景画", "水晶纜車", "水晶缆车", "心跳行星", "八五二零",
+        "i'm loving it", "double版燒雞腿包", "這支U87", "这支U87", "2027年2月20", "甚麼事 這是這個菜", "这是这个菜"
     ]
     gap_stop_words = set(
         AD_KEYWORDS + TRAFFIC_KEYWORDS + WEATHER_KEYWORDS + NEWS_START_KEYWORDS +
-        STATION_PROMOS + list(gap_news_keywords) + promo_block_markers + outro_ad_markers + [
-            "天氣預測", "天氣預算", "流感", "皇家加勒比", "十方法師", "萬寧", "護髮", "打針", "防流感",
-            "青衣城", "清衣城", "國際歌迷會", "各大音樂平台", "輸血服務中心", "紅十字會", "通訊局", "coms-auth"
-        ]
+        STATION_PROMOS + list(gap_news_keywords) + promo_block_markers + outro_ad_markers + shared_ad_extras
     )
+
+    core_host_jingle_cues = [
+        k.lower() for k in (gap_host_keywords + [
+            "bad girl", "baggirl", "大過佬", "大過老", "大过老", "來大笑代替上路", "elsie", "elsi", "alsie",
+            "最後一個pose", "最後一個姿勢", "最後一條reels", "最後一條reals", "街仔好人", "雞仔好人", "衰佬",
+            "粒粒皆辛苦", "三個農夫", "everyday is", "吹水未夠班", "十句講曬", "手機碌多咗", "大明星殺手",
+            "有人掛住你", "聖艾粒", "少爺占", "當奴", "lalalala", "唯有自己", "邊個痴線", "突擊測驗",
+            "美術學會", "有冇共鳴", "你sing", "明星插班生", "明星導航員", "寶寶很苦", "ilub tv", "晚間劇場",
+            "心水清", "黃埔", "豪子", "jacky"
+        ])
+    ]
+
+    def _seg_times(seg):
+        if "offsets" in seg:
+            return seg.get("offsets", {}).get("from", 0) / 1000.0, seg.get("offsets", {}).get("to", 0) / 1000.0
+        return seg.get("start", 0.0), seg.get("end", 0.0)
+
+    def _has_kw(text_str, keywords):
+        tl = text_str.lower()
+        return any((k in text_str) or (k.lower() in tl) for k in keywords)
 
     # -------------------------------------------------------------
     # 檢查項 0：邊界精準對齊自癒 (Boundary End-Snapping)
@@ -703,62 +806,84 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     for k in healed_keeps:
         k_end = float(k["end"])
         for seg in transcript_segments:
-            s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
-            s_to = seg.get("offsets", {}).get("to", 0) / 1000.0 if "offsets" in seg else seg.get("end", 0.0)
+            s_from, s_to = _seg_times(seg)
             s_txt = seg.get("text", "").strip()
             if abs(s_from - k_end) <= 1.5 and s_to > k_end + 0.5:
                 is_music_or_announce = (
                     any(p in s_txt for p in HALLUCINATION_PATTERNS) or
                     any(w in s_txt for w in song_announce_words)
                 )
-                if is_music_or_announce and not any(w in s_txt for w in gap_stop_words):
+                if is_music_or_announce and not _has_kw(s_txt, gap_stop_words):
                     healed_items.append(f"段落結尾對齊：由 {k_end:.1f}s 延伸至行尾 {s_to:.1f}s (完整保留結尾音樂/報歌名)")
                     k["end"] = round(s_to, 2)
                     break
 
     tail_ad_stop_words = set(
         AD_KEYWORDS + outro_ad_markers + STATION_PROMOS + PSA_KEYWORDS +
-        TRAFFIC_KEYWORDS + WEATHER_KEYWORDS + NEWS_START_KEYWORDS + [
-            "天氣預測", "天氣預算", "流感", "皇家加勒比", "十方法師", "萬寧", "護髮", "打針", "防流感",
-            "青衣城", "清衣城", "國際歌迷會", "各大音樂平台", "輸血服務中心", "紅十字會", "通訊局", "coms-auth"
-        ]
+        TRAFFIC_KEYWORDS + WEATHER_KEYWORDS + NEWS_START_KEYWORDS + NEWS_END_KEYWORDS + shared_ad_extras
     )
 
     # -------------------------------------------------------------
     # 檢查項 0.1：段落結尾防誤吞廣告/宣傳回縮 (Boundary Tail Ad Pullback)
-    # 若某正片段落結尾最後 35 秒內已進入廣告、節目宣傳、報時，自動回縮至廣告開始前
+    # 若某正片段落結尾最後 45 秒內已進入廣告、節目宣傳、報時，自動回縮至廣告開始前
     # -------------------------------------------------------------
     for k in healed_keeps:
         k_st = float(k["start"])
         k_et = float(k["end"])
         earliest_tail_ad = None
         earliest_ad_text = ""
-        tail_window = max(k_st, k_et - 35.0)
+        tail_window = max(k_st, k_et - 45.0)
 
         tail_segs = [
             s for s in transcript_segments
-            if tail_window <= (s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)) < k_et
+            if tail_window <= _seg_times(s)[0] < k_et
         ]
 
         for s in tail_segs:
-            s_from = s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)
-            s_to = s.get("offsets", {}).get("to", 0)/1000.0 if "offsets" in s else s.get("end", 0.0)
+            s_from, s_to = _seg_times(s)
             s_txt = s.get("text", "").strip()
-            is_pure_time = any(w in s_txt for w in HALF_HOUR_KEYWORDS + TIME_ANNOUNCEMENT_KEYWORDS) and (len(s_txt) <= 8) and not any(h in s_txt for h in gap_host_keywords)
-            is_ad_seg = any(w in s_txt for w in tail_ad_stop_words) or is_pure_time
+            is_pure_time = any(w in s_txt for w in HALF_HOUR_KEYWORDS + TIME_ANNOUNCEMENT_KEYWORDS) and (len(s_txt) <= 8) and not _has_kw(s_txt, gap_host_keywords)
+            is_ad_seg = _has_kw(s_txt, tail_ad_stop_words) or is_pure_time
             if is_ad_seg:
                 if earliest_tail_ad is None:
                     earliest_tail_ad = s_from
                     earliest_ad_text = s_txt
             else:
-                is_host_or_jingle = any(h in s_txt for h in gap_host_keywords + PROGRAM_JINGLE_KEYWORDS)
-                if is_host_or_jingle:
+                if _has_kw(s_txt, gap_host_keywords + PROGRAM_JINGLE_KEYWORDS):
                     earliest_tail_ad = None
                     earliest_ad_text = ""
 
         if earliest_tail_ad is not None and (k_et - earliest_tail_ad >= 0.5):
             healed_items.append(f"段落結尾廣告回縮：由 {k_et:.1f}s 提早回縮至 {earliest_tail_ad:.1f}s (切除誤吞之宣傳/商業廣告: {earliest_ad_text[:20]})")
             k["end"] = round(earliest_tail_ad, 2)
+
+    # -------------------------------------------------------------
+    # 檢查項 0.2：段落開頭防誤吞廣告/宣傳後推 (Boundary Head Ad/Promo Trimming)
+    # 若 Part 2+ 開頭前 105 秒內出現明顯電台宣傳片或商業廣告（且尚未出現主持或節目 Jingle），自動將起點推後至廣告結束處
+    # -------------------------------------------------------------
+    for k in healed_keeps[1:]:
+        k_st = float(k["start"])
+        k_et = float(k["end"])
+        if k_et - k_st <= 120.0:
+            continue
+        latest_head_ad_end = None
+        latest_head_ad_text = ""
+        head_window_end = min(k_et - 30.0, k_st + 105.0)
+        for s in transcript_segments:
+            s_from, s_to = _seg_times(s)
+            if s_to <= k_st:
+                continue
+            if s_from >= head_window_end:
+                break
+            s_txt = s.get("text", "").strip()
+            if _has_kw(s_txt, tail_ad_stop_words):
+                latest_head_ad_end = max(latest_head_ad_end or k_st, min(s_to, k_et - 30.0))
+                latest_head_ad_text = s_txt
+            elif _has_kw(s_txt, core_host_jingle_cues):
+                break
+        if latest_head_ad_end is not None and (latest_head_ad_end - k_st >= 1.5):
+            healed_items.append(f"段落開頭廣告後推：由 {k_st:.1f}s 延後至 {latest_head_ad_end:.1f}s (切除開頭誤吞宣傳/商業廣告: {latest_head_ad_text[:20]})")
+            k["start"] = round(latest_head_ad_end, 2)
 
     # -------------------------------------------------------------
     # 檢查項 0.5：幻覺假破口自動縫合 (False Mid-Part Split Self-Healing)
@@ -908,16 +1033,15 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
             "聖艾粒", "星崖粒", "星矮粒", "星藝粒", "啦啦啦啦", "一早起床", "公海二",
             "太陽都落山", "太陽都降山", "長毛Jackie", "长毛Jackie", "開牙齒", "开牙齿"
         ] if is_ilub else [
-            "bad girl", "badgirl", "大過佬", "大過老", "帶過老", "大过路", "大過路", "來大笑代替上路", "代替上路",
-            "完美阿正", "笑爆嘴", "elsie", "alsie", "借首歌", "借宿法", "借宿白",
+            "bad girl", "badgirl", "baggirl", "大過佬", "大過老", "大过老", "帶過老", "大过路", "大過路", "來大笑代替上路", "代替上路",
+            "完美阿正", "笑爆嘴", "elsie", "elsi", "alsie", "借首歌", "借宿法", "借宿白",
             "每日晨光", "每日晨運", "每日晨混", "扮六尺", "扮六呎"
         ]
         # 尋找 0~350s 內開播前最後一則新聞/交通/天氣/公益宣傳/商業廣告的結束點與最早主題曲起點
         last_pre_show_ad_end = 25.0
         earliest_cue_time = None
         for seg in transcript_segments:
-            s_from = seg.get("offsets", {}).get("from", 0) / 1000.0 if "offsets" in seg else seg.get("start", 0.0)
-            s_to = seg.get("offsets", {}).get("to", 0) / 1000.0 if "offsets" in seg else seg.get("end", 0.0)
+            s_from, s_to = _seg_times(seg)
             s_text = seg.get("text", "")
             s_lower = s_text.lower()
             if s_from <= 350.0:
@@ -925,7 +1049,7 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                     if earliest_cue_time is None:
                         earliest_cue_time = s_from
                 if (earliest_cue_time is None or s_from <= earliest_cue_time):
-                    if any(w in s_text for w in gap_stop_words) or any(w in s_text for w in ["王牌出場", "深夜一至二", "直播室跟大家再見面"]):
+                    if _has_kw(s_text, gap_stop_words) or any(w in s_text for w in ["王牌出場", "深夜一至二", "直播室跟大家再見面"]):
                         last_pre_show_ad_end = max(last_pre_show_ad_end, s_to)
 
         # 防提前切入廣告：若 p1_start 小於等於播前廣告結束點，延後起點避開廣告
@@ -1165,6 +1289,101 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         else:
             checks["part4_outro_song"] = f"WARN (結束於: {last_end:.1f}s < 6600s)"
 
+    # -------------------------------------------------------------
+    # 檢查項 2.6：段中高密度短廣告自癒拆分 (Mid-Segment Short Ad Cluster Excision)
+    # 若單段超過 500 秒之正片中途夾雜 20~120 秒商業短廣告（>=3 個明確廣告詞條集中於 60s 內且其間無主持/Jingle線索），自動切除並拆為 a/b 兩段
+    # -------------------------------------------------------------
+    news_bulletin_anchors = [
+        "商業電台新聞", "商业电台新闻", "現在由葉俊庭", "现在由叶俊庭", "葉俊庭報道新聞", "叶俊庭报道新闻",
+        "北陀新聞", "北陀新闻", "這節新聞報道完", "這一節新聞報道完", "這節新聞報導完", "這節新聞播出完",
+        "這節新聞播完", "这一节新闻报道完", "这节新闻报道完", "这节新闻报导完", "这节新闻播出完", "这节新闻播完",
+        "現在姚堅報道新聞", "现在摇坚报道新闻", "姚堅報道新聞", "摇坚报道新闻"
+    ]
+    strict_ad_marker_groups = [
+        ("流感疫苗", ("流感疫苗", "流感針", "流感针", "季節性流感", "季节性流感")),
+        ("昂坪360", ("昂坪360", "昂坪 360", "水晶纜車", "水晶缆车", "全景畫", "全景画")),
+        ("選舉委員會", ("選舉委員會", "选举委员会", "選舉管理委員會", "选举管理委员会")),
+        ("賽馬會", ("香港賽馬會", "香港赛马会", "香港蔡賣會", "香港蔡卖会", "慈善信託基金", "慈善信托基金")),
+        ("有誰共鳴", ("有誰共鳴", "有谁共鸣", "50881903")),
+        ("條款細則", ("受條款及細則約束", "受条款及细则约束", "條款及細則", "条款及细则", "完整條款", "完整条款", "保單契約", "保单契约")),
+        ("借定唔借", ("借定唔借", "還得到先好借")),
+        ("防騙/食安", ("防騙視伏器", "食安中心提提你")),
+        ("天氣預報", ("天氣預測", "天气预测", "天氣預算", "本港地區", "本港地区")),
+        ("心跳行星", ("心跳行星", "八五二零")),
+        ("一田購物", ("一田購物", "來一田")),
+        ("煤氣MiaCucina", ("Mia Cucina", "Mia Katrina", "名氣家", "煤氣煮食爐")),
+        ("AIA投保", ("AIA",)),
+        ("網上/獨立投保", ("網上投保", "网上投保", "獨立投保", "独立投保")),
+        ("新歌宣傳", ("全新單曲", "各大音樂平台")),
+        ("OCBC銀行", ("OCBC", "華僑銀行", "华翘银行")),
+        ("財富管理", ("財富管理", "财富管理")),
+        ("成就理想", ("成就每一個理想", "成就每一个理想", "成就理想初心")),
+        ("用心幫有心人", ("用心幫", "用心帮")),
+        ("EasonU87", ("這支U87", "这支U87", "2027年2月20", "Recording Sessions", "演藝學院歌劇院")),
+    ]
+
+    def _find_dense_ad_cluster(segs_slice):
+        matched_points = []
+        for s in segs_slice:
+            s_from, s_to = _seg_times(s)
+            s_txt = s.get("text", "").strip()
+            s_lower = s_txt.lower()
+            for canon_name, variants in strict_ad_marker_groups:
+                if any((v in s_txt) or (v.lower() in s_lower) for v in variants):
+                    matched_points.append((s_from, s_to, canon_name))
+        for t_anchor, _, _ in matched_points:
+            win_pts = [(ts, te, w) for ts, te, w in matched_points if t_anchor <= ts <= t_anchor + 60.0]
+            if len({w for _, _, w in win_pts}) >= 3 and len({ts for ts, _, _ in win_pts}) >= 2:
+                c_end = max(te for _, te, _ in win_pts)
+                has_host_inside = any(
+                    _has_kw(s.get("text", ""), core_host_jingle_cues)
+                    for s in segs_slice if t_anchor <= _seg_times(s)[0] < c_end
+                )
+                if not has_host_inside:
+                    return t_anchor, c_end, sorted({w for _, _, w in win_pts})
+        return None
+
+    split_healed_keeps = []
+    for k in healed_keeps:
+        k_st = float(k["start"])
+        k_et = float(k["end"])
+        if k_et - k_st >= 500.0:
+            k_segs = [s for s in transcript_segments if k_st <= _seg_times(s)[0] < k_et]
+            cluster = _find_dense_ad_cluster(k_segs)
+            if cluster:
+                c_st, c_et, c_words = cluster
+                # 向前後延伸貼合同一廣告串前後緊鄰之無主持廣告句（例如首句「不用驗身,有三高」與尾句）
+                for s in reversed(k_segs):
+                    sf, st_ = _seg_times(s)
+                    if sf >= c_st:
+                        continue
+                    if c_st - st_ > 8.0 or _has_kw(s.get("text", ""), core_host_jingle_cues):
+                        break
+                    if _has_kw(s.get("text", ""), tail_ad_stop_words):
+                        c_st = sf
+                    else:
+                        break
+                for s in k_segs:
+                    sf, st_ = _seg_times(s)
+                    if sf < c_et:
+                        continue
+                    if sf - c_et > 8.0 or _has_kw(s.get("text", ""), core_host_jingle_cues):
+                        break
+                    if _has_kw(s.get("text", ""), tail_ad_stop_words):
+                        c_et = st_
+                    else:
+                        break
+                if (c_st - k_st >= 120.0) and (k_et - c_et >= 90.0) and (15.0 <= c_et - c_st <= 120.0):
+                    healed_items.append(
+                        f"段中短廣告自癒拆分：於 {c_st:.1f}s~{c_et:.1f}s 自動切除中途廣告破口 "
+                        f"({c_et-c_st:.1f}s, 命中: {', '.join(c_words[:3])})"
+                    )
+                    split_healed_keeps.append({"start": k_st, "end": round(c_st, 2), "description": f"{k.get('description', '')} (上半段)"})
+                    split_healed_keeps.append({"start": round(c_et, 2), "end": k_et, "description": f"{k.get('description', '')} (下半段)"})
+                    continue
+        split_healed_keeps.append(k)
+    healed_keeps = split_healed_keeps
+
     # 計算自癒後純淨時長
     clean_duration = sum(float(k["end"]) - float(k["start"]) for k in healed_keeps)
     clean_dur_str = f"{int(clean_duration//3600):02d}:{int((clean_duration%3600)//60):02d}:{int(clean_duration%60):02d}"
@@ -1189,11 +1408,42 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         checks["duration_gate"] = f"PASS (非標準2小時錄音，純淨時長: {clean_dur_str})"
 
     # -------------------------------------------------------------
+    # 檢查項 3.5：正片殘留新聞與廣告污染掃描門禁 (Contamination Scan Gate)
+    # -------------------------------------------------------------
+    contamination_hits = []
+    for k_idx, k in enumerate(healed_keeps):
+        k_st = float(k["start"])
+        k_et = float(k["end"])
+        k_segs = [s for s in transcript_segments if k_st <= _seg_times(s)[0] < k_et]
+        matched_news = []
+        for s in k_segs:
+            s_from, _ = _seg_times(s)
+            s_txt = s.get("text", "").strip()
+            for na in news_bulletin_anchors:
+                if na in s_txt:
+                    matched_news.append((s_from, na))
+                    break
+        if matched_news:
+            t_first, w_first = matched_news[0]
+            contamination_hits.append(f"段落#{k_idx+1} ({k_st:.0f}s~{k_et:.0f}s) 含整點新聞聲帶 [{w_first}@{t_first:.0f}s]")
+            continue
+        cluster = _find_dense_ad_cluster(k_segs)
+        if cluster:
+            c_st, _, c_words = cluster
+            contamination_hits.append(f"段落#{k_idx+1} ({k_st:.0f}s~{k_et:.0f}s) 含高密度廣告/公益聲帶 ({', '.join(c_words)}@{c_st:.0f}s)")
+
+    if contamination_hits:
+        checks["ad_contamination"] = f"FAIL ({'; '.join(contamination_hits[:3])})"
+        failure_reasons.append(f"正片段落殘留新聞或商業廣告 ({'; '.join(contamination_hits[:2])})")
+    else:
+        checks["ad_contamination"] = "PASS (未偵測到整點新聞或高密度商業/公益廣告殘留)"
+
+    # -------------------------------------------------------------
     # 檢查項 4：引擎門禁 (Engine Gate)
     # -------------------------------------------------------------
-    if "heuristic" in engine_used.lower() and clean_duration > 6000.0:
-        checks["engine_gate"] = f"FAIL (啟發式規則引擎產出時長 {clean_dur_str} 超過 100 分鐘，廣告未切淨，嚴禁放行)"
-        failure_reasons.append("啟發式引擎切除不完全，時長超標")
+    if "heuristic" in engine_used.lower() and (clean_duration > 6000.0 or len(healed_keeps) < 4):
+        checks["engine_gate"] = f"FAIL (啟發式規則引擎產出異常：時長 {clean_dur_str}、共 {len(healed_keeps)} 段，廣告未切淨，嚴禁放行)"
+        failure_reasons.append("啟發式引擎切除不完全，嚴禁放行")
     else:
         checks["engine_gate"] = f"PASS (採用引擎: {engine_used})"
 
@@ -1323,7 +1573,7 @@ def audit_boundaries_with_gemini(raw_keeps, transcript_segments, show_code="bgog
    - 防正片腰斬：若初劃起點太晚，切掉了主持人的開場問候或開場 Jingle 前奏，必須往前延伸以完整保留開場！
 
 2. 【結尾審核 (Tail Boundary)】：
-   - 剔除廣告與節目宣傳片殘留：若結尾後包含了商業廣告、電台其他節目宣傳片（如「手工杏仁」、「知婚姨」、「混帳」、「晴朗的一天」）、新聞導語（如「現在由姚堅報道新聞」）或交通消息，【必須立即將終點回縮】，精確停在主持人最後一句說話結束或片尾曲結束的瞬間！
+   - 剔除廣告與節目宣傳片殘留：若結尾後包含了商業廣告、電台其他節目宣傳片/廣播劇預告（如《心跳行星 八五二零》、「手工杏仁」、「知婚姨」、「混帳」、「晴朗的一天」）、新聞導語（如「現在由姚堅報道新聞」）或交通消息，【必須立即將終點回縮】，精確停在主持人最後一句說話結束或片尾曲結束的瞬間！
    - 防正片腰斬：若初劃終點太早（例如主持人在廣告前還在交代話題、預告嘉賓如 Eason、或跟嘉賓互動道別），【絕對不可提前腰斬】，必須往後延伸保留至主持人最後一句說話結束！
 
 請審核以下各段過渡帶逐字稿：
@@ -1352,62 +1602,36 @@ def audit_boundaries_with_gemini(raw_keeps, transcript_segments, show_code="bgog
         }
     }
     req_data = json.dumps(payload).encode("utf-8")
+    ctx = _create_gemini_ssl_context()
 
-    if certifi:
-        try:
-            ctx = ssl.create_default_context(cafile=certifi.where())
-        except Exception:
-            ctx = ssl._create_unverified_context()
-    else:
-        try:
-            ctx = ssl.create_default_context()
-        except Exception:
-            ctx = ssl._create_unverified_context()
-
-    models_to_try = [model] if model else get_gemini_model_candidates()
+    candidates = get_gemini_model_candidates()
+    models_to_try = ([model] + [m for m in candidates if m != model]) if model else candidates
     all_keys = get_gemini_api_keys()
     if not all_keys:
         all_keys = [api_key]
 
-    audited_result = None
+    audited_list = []
     last_err = None
 
     for m in models_to_try:
         if "lite" in m.lower():
             continue
         for k in all_keys:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={k}"
-            req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
             try:
-                with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
-                    res = json.loads(resp.read().decode("utf-8"))
-                    res_text = res["candidates"][0]["content"]["parts"][0]["text"]
-                    audited_result = json.loads(res_text)
-                if audited_result and "audited_intervals" in audited_result:
+                audited_result, ctx = _call_gemini_json(m, k, req_data, timeout=120, ctx=ctx)
+                audited_list = _extract_gemini_intervals(audited_result, "audited_intervals")
+                if audited_list:
                     break
+                last_err = ValueError(f"模型 {m} 回傳空 audited_intervals")
             except Exception as e:
-                if "CERTIFICATE_VERIFY_FAILED" in str(e) or "certificate verify failed" in str(e):
-                    ctx = ssl._create_unverified_context()
-                    try:
-                        with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
-                            res = json.loads(resp.read().decode("utf-8"))
-                            res_text = res["candidates"][0]["content"]["parts"][0]["text"]
-                            audited_result = json.loads(res_text)
-                        if audited_result and "audited_intervals" in audited_result:
-                            break
-                    except Exception as e2:
-                        last_err = e2
-                        continue
                 last_err = e
                 continue
-        if audited_result and "audited_intervals" in audited_result:
+        if audited_list:
             break
 
-    if not audited_result or "audited_intervals" not in audited_result:
+    if not audited_list:
         print(f"  ⚠️ [Pass 2] 邊界覆核請求未能完成 ({last_err})，安全維持 Pass 1 初劃區間")
         return raw_keeps
-
-    audited_list = audited_result.get("audited_intervals", [])
     refined_keeps = [dict(k) for k in raw_keeps]
 
     print(f"\n  🔬 [Pass 2: 邊界顯微鏡深度覆核結果 ({len(audited_list)} 個區間)]:")
@@ -1492,11 +1716,18 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
                     c_cuts = cached.get("cuts", [])
                     c_model = cached.get("model", "gemini-cached")
                     c_report = cached.get("report", {})
-                    if c_keeps and c_report.get("score", 0) >= 80:
-                        dur_text = c_report.get("clean_duration_formatted") or c_report.get("clean_dur_str")
-                        print(f"⚡ [配額節省] 發現已驗證之高分去廣告快取 ({cache_file})！")
-                        print(f"   評分: {c_report.get('score')}/100, 純淨時長: {dur_text}，直接載入快取（消耗 0 次 Gemini API）")
-                        return c_keeps, c_cuts, f"{c_model} (cache)", c_report
+                    if c_keeps:
+                        # 用最新品檢與自癒規則重新複驗快取區間（0 API 配額消耗）
+                        c_passed, c_keeps, c_cuts, c_report = inspect_and_verify_cut_quality(
+                            c_keeps, cuts=[], total_duration=total_duration,
+                            transcript_segments=transcript_segments, show_code=show_code,
+                            engine_used=f"{c_model} (cache)"
+                        )
+                        if c_passed and c_report.get("score", 0) >= 80:
+                            dur_text = c_report.get("clean_duration_formatted")
+                            print(f"⚡ [配額節省] 發現已驗證之高分去廣告快取 ({cache_file})！")
+                            print(f"   評分: {c_report.get('score')}/100, 純淨時長: {dur_text}，直接載入快取（消耗 0 次 Gemini API）")
+                            return c_keeps, c_cuts, f"{c_model} (cache)", c_report
                 except Exception as e:
                     print(f"⚠️ 讀取去廣告快取失敗: {e}，將調用 Gemini 模型")
         try:
@@ -1662,17 +1893,7 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     }
 
     req_data = json.dumps(payload).encode("utf-8")
-
-    if certifi:
-        try:
-            ctx = ssl.create_default_context(cafile=certifi.where())
-        except Exception:
-            ctx = ssl._create_unverified_context()
-    else:
-        try:
-            ctx = ssl.create_default_context()
-        except Exception:
-            ctx = ssl._create_unverified_context()
+    ctx = _create_gemini_ssl_context()
 
     if model:
         model_queue = [model]
@@ -1698,23 +1919,9 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
             for k_idx, cur_key in enumerate(all_keys):
                 key_tag = f" (Key #{k_idx+1})" if len(all_keys) > 1 else ""
                 print(f"  🤖 嘗試調用 Gemini 模型 [{cand_model}]{key_tag} (順位 {idx+1}/{len(model_queue)}{round_str})...")
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{cand_model}:generateContent?key={cur_key}"
-                req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
                 try:
-                    try:
-                        with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
-                            res = json.loads(resp.read().decode("utf-8"))
-                    except Exception as ssl_err:
-                        if "CERTIFICATE_VERIFY_FAILED" in str(ssl_err) or "certificate verify failed" in str(ssl_err):
-                            ctx = ssl._create_unverified_context()
-                            with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=45) as resp:
-                                res = json.loads(resp.read().decode("utf-8"))
-                        else:
-                            raise
-                    result_text = res["candidates"][0]["content"]["parts"][0]["text"]
-                    parsed = json.loads(result_text)
-
-                    raw_keeps = parsed.get("keep_intervals", [])
+                    parsed, ctx = _call_gemini_json(cand_model, cur_key, req_data, timeout=120, ctx=ctx)
+                    raw_keeps = _extract_gemini_intervals(parsed, "keep_intervals")
                     if not raw_keeps:
                         raise ValueError(f"模型 {cand_model} 未回傳有效的 keep_intervals")
 
