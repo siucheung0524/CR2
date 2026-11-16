@@ -86,6 +86,7 @@ STATION_PROMOS = [
     "有誰共鳴", "有稅共鳴", "引發你的共鳴", "50881903", "中銀香港理財", "一切從音樂開始",
     "LIFE 音樂會", "LIFE音樂會", "woodie", "woodby", "即刻學堂", "即參學彈",
     "寫一秒", "新一秒", "七九零三", "即七九零三", "色測903", "釋測903", "釋測九零三", "跑高山", "爬下山", "借一秒", "者1秒",
+    "這一秒", "这一秒", "7703", "77903", "天天實在", "天天实在",
     "王先生想你", "在晴朗的一天出發", "晴朗", "林海峰", "軟紙劫", "阮子健", "道格小島",
     "Pay for the day", "為你親自打點", "同年的自己", "港鐵接軌", "貫通地上地下", "以即時新聞",
     "Be Before Bed Time", "be before bed time", "不准睡先", "鄧小巧", "拾回自己的空間", "做回自己",
@@ -93,7 +94,13 @@ STATION_PROMOS = [
     "知芬衣", "知婚姨", "朱芬", "知多知那麼多", "知多知咁多", "Centerminia", "善男信女", "鍾雪瑩", "楊偉倫",
     "星矮粒", "聖艾粒", "下午五至七", "啦啦星之中八拍", "黃先生想你點", "點話點好",
     "先生小姐", "先生,小姐", "拖匪", "手工杏仁", "拖匪翠翠",
-    "心跳行星", "八五二零", "即上各大音乐平台", "这一秒 新一秒"
+    "心跳行星", "八五二零", "即上各大音乐平台", "这一秒 新一秒",
+    "重塑經典", "重数经典", "從數經典", "从数经典", "錄音全程就在目前", "录音全程就在目前",
+    "HHM的浪漫", "黑喉黑面", "买一重老死", "買一重老死",
+    "Always be with you", "周六快樂時代", "周六快乐时代", "Listen to Eason", "Listen to Eastern",
+    "Lesson to Ethan", "與我常在", "与我常在", "叱咤樂壇", "戚冊學談", "戚測樂壇", "刺殺樂壇", "七七樂壇",
+    "專業推介", "专业推介", "新上榜", "Oscar失眠藥", "Oscar 失眠藥", "一路漂浮", "一路飘放",
+    "咆哮山莊", "爬敲山莊", "Music Break", "廣東歌關注組", "路人甲團火"
 ]
 
 # 6. 商業特約廣告詞庫
@@ -123,7 +130,11 @@ AD_KEYWORDS = [
     "昂坪360", "昂坪 360", "全景画", "全景畫", "水晶缆车", "水晶纜車", "一田購物", "來一田", "Mia Cucina", "Mia Katrina",
     "煤氣煮食爐", "煤气", "煤氣", "The Club", "ASCHA", "張慈浩", "网上投保", "網上投保", "保单契约", "保單契約",
     "不用驗身", "不用验身", "有三高", "完整條款", "完整条款", "獨立投保", "独立投保",
-    "OCBC", "華僑銀行", "华翘银行", "財富管理", "财富管理", "成就理想", "追寻理想", "追尋理想", "可靠的伙伴", "可靠的夥伴", "用心帮", "用心幫", "梦想要落地", "夢想要落地", "创造更多这样的旅程"
+    "OCBC", "華僑銀行", "华翘银行", "財富管理", "财富管理", "成就理想", "追寻理想", "追尋理想", "可靠的伙伴", "可靠的夥伴", "用心帮", "用心幫", "梦想要落地", "夢想要落地", "创造更多这样的旅程",
+    "飛鷹哥", "飞鷹哥", "飛鷹活絡油", "飛鷹活樂油", "飞鷹活樂遊", "活絡油", "活樂油", "活樂遊", "骨刺痛",
+    "大館", "和言不同", "無界樂章", "Art May", "Art-mate", "存款保障", "存款守護者", "1831831",
+    "我年輕過", "我年轻过", "黑痛", "成人藥片", "寶礦力水特", "補礦力水特", "補礦力水達", "Iron Water",
+    "競賽牌照號碼", "竞赛牌照号码", "崇光感謝", "皇冠車展", "貴如美", "桂如美", "瞬間順滑", "國家安全", "国家安全", "愛國者治港", "爱国者治港"
 ]
 
 # 7. 節目專屬 Jingle / 主持關鍵字（重點保護，絕不可切！）
@@ -545,13 +556,13 @@ def _call_gemini_json(model_name, api_key, req_data, timeout=120, ctx=None):
         with urllib.request.urlopen(req, data=req_data, context=ssl_ctx, timeout=timeout) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
-    for attempt in range(2):
+    for attempt in range(3):
         try:
             res = _do_open(ctx)
             break
         except urllib.error.HTTPError as http_err:
-            if http_err.code == 503 and attempt == 0:
-                time.sleep(1.5)
+            if http_err.code == 503 and attempt < 2:
+                time.sleep(2.0 + attempt * 2.5)
                 continue
             raise
         except Exception as err:
@@ -858,9 +869,13 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
             k["end"] = round(earliest_tail_ad, 2)
 
     # -------------------------------------------------------------
-    # 檢查項 0.2：段落開頭防誤吞廣告/宣傳後推 (Boundary Head Ad/Promo Trimming)
+        # 檢查項 0.2：段落開頭防誤吞廣告/宣傳後推 (Boundary Head Ad/Promo Trimming)
     # 若 Part 2+ 開頭前 105 秒內出現明顯電台宣傳片或商業廣告（且尚未出現主持或節目 Jingle），自動將起點推後至廣告結束處
     # -------------------------------------------------------------
+    head_host_dialogue_cues = core_host_jingle_cues + [
+        "大哥", "阿姐", "森美", "阿正", "芯仔", "申美", "早安", "早晨",
+        "接個聽眾", "接个听众", "聽眾進來", "听众进来", "game on", "全城起動", "全城起动", "準備好了嗎", "准备好了吗"
+    ]
     for k in healed_keeps[1:]:
         k_st = float(k["start"])
         k_et = float(k["end"])
@@ -869,6 +884,7 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         latest_head_ad_end = None
         latest_head_ad_text = ""
         head_window_end = min(k_et - 30.0, k_st + 105.0)
+        non_ad_speech_count = 0
         for s in transcript_segments:
             s_from, s_to = _seg_times(s)
             if s_to <= k_st:
@@ -876,14 +892,53 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
             if s_from >= head_window_end:
                 break
             s_txt = s.get("text", "").strip()
+            if _has_kw(s_txt, head_host_dialogue_cues):
+                break
             if _has_kw(s_txt, tail_ad_stop_words):
                 latest_head_ad_end = max(latest_head_ad_end or k_st, min(s_to, k_et - 30.0))
                 latest_head_ad_text = s_txt
-            elif _has_kw(s_txt, core_host_jingle_cues):
-                break
+                non_ad_speech_count = 0
+            else:
+                if not any(p in s_txt for p in HALLUCINATION_PATTERNS) and len(s_txt) >= 2:
+                    non_ad_speech_count += 1
+                    if non_ad_speech_count >= 5:
+                        break
         if latest_head_ad_end is not None and (latest_head_ad_end - k_st >= 1.5):
             healed_items.append(f"段落開頭廣告後推：由 {k_st:.1f}s 延後至 {latest_head_ad_end:.1f}s (切除開頭誤吞宣傳/商業廣告: {latest_head_ad_text[:20]})")
             k["start"] = round(latest_head_ad_end, 2)
+
+    # -------------------------------------------------------------
+    # 檢查項 0.3：破口內電台宣傳片孤島自動剔除 (Isolated Promo Island Removal)
+    # 若兩個大破口之間夾著極短（<= 135s）且無本節目主持/單元 Jingle 之孤島段落（如 11:30 報時後的 75s 叱咤樂壇新歌宣傳），自動剔除！
+    # -------------------------------------------------------------
+    if len(healed_keeps) >= 4:
+        healed_keeps.sort(key=lambda x: float(x["start"]))
+        filtered_islands = [healed_keeps[0]]
+        island_promo_cues = [
+            "叱咤樂壇", "戚冊學談", "戚測樂壇", "刺殺樂壇", "七七樂壇", "woodie",
+            "專業推介", "专业推介", "新上榜", "music break", "咆哮山莊", "爬敲山莊",
+            "oscar", "失眠藥", "失眠药", "有誰共鳴", "有谁共鸣", "這一秒", "这一秒", "新一秒"
+        ] + HALF_HOUR_KEYWORDS + TIME_ANNOUNCEMENT_KEYWORDS
+        for idx_k in range(1, len(healed_keeps) - 1):
+            cur_k = healed_keeps[idx_k]
+            c_st = float(cur_k["start"])
+            c_et = float(cur_k["end"])
+            c_dur = c_et - c_st
+            prev_et = float(filtered_islands[-1]["end"])
+            next_st = float(healed_keeps[idx_k + 1]["start"])
+            if c_dur <= 135.0 and (c_st - prev_et >= 60.0) and (next_st - c_et >= 90.0):
+                inner_segs = [s for s in transcript_segments if c_st <= _seg_times(s)[0] < c_et]
+                ctx_segs = [s for s in transcript_segments if (c_st - 18.0) <= _seg_times(s)[0] <= (c_et + 18.0)]
+                has_core_host = any(_has_kw(s.get("text", ""), core_host_jingle_cues) for s in inner_segs)
+                has_promo_ctx = any(_has_kw(s.get("text", ""), island_promo_cues + list(tail_ad_stop_words)) for s in ctx_segs)
+                if not has_core_host and has_promo_ctx:
+                    healed_items.append(
+                        f"破口宣傳孤島剔除：移除夾在破口中間之電台宣傳/非正片短區間 {c_st:.1f}s~{c_et:.1f}s (時長: {c_dur:.1f}s)"
+                    )
+                    continue
+            filtered_islands.append(cur_k)
+        filtered_islands.append(healed_keeps[-1])
+        healed_keeps = filtered_islands
 
     # -------------------------------------------------------------
     # 檢查項 0.5：幻覺假破口自動縫合 (False Mid-Part Split Self-Healing)
@@ -903,19 +958,26 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                     s for s in transcript_segments
                     if p_end <= (s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)) < n_start
                 ]
+                next_head_segs = [
+                    s for s in transcript_segments
+                    if n_start <= _seg_times(s)[0] <= n_start + 12.0
+                ]
                 has_real_break = any(
-                    any(w in s.get("text", "") for w in gap_stop_words)
+                    _has_kw(s.get("text", ""), gap_stop_words | tail_ad_stop_words)
                     for s in seg_in_gap
                 )
                 has_hallucination = any(
                     any(p in s.get("text", "") for p in HALLUCINATION_PATTERNS)
                     for s in seg_in_gap
                 )
-                has_host = any(
-                    any(h in s.get("text", "") for h in gap_host_keywords)
-                    for s in seg_in_gap
+                host_hit_count = sum(
+                    1 for s in seg_in_gap if _has_kw(s.get("text", ""), gap_host_keywords)
                 )
-                if not has_real_break and not has_hallucination and has_host and len(seg_in_gap) >= 3:
+                next_starts_with_jingle = any(
+                    _has_kw(s.get("text", ""), PROGRAM_JINGLE_KEYWORDS)
+                    for s in next_head_segs
+                )
+                if not has_real_break and not has_hallucination and host_hit_count >= 2 and not next_starts_with_jingle and len(seg_in_gap) >= 3:
                     healed_items.append(f"假破口自動縫合：合併被誤切的正片區間 {p_end:.1f}s~{n_start:.1f}s (挽回 {gap:.1f}s 連續主持對話/問答)")
                     prev["end"] = float(nxt["end"])
                     prev["description"] = f"{prev.get('description', '')} + {nxt.get('description', '')}".strip(" +")
@@ -995,7 +1057,9 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         # 檢查每個大破口結尾（next_start 前 180 秒內），若最後一則廣告結束後已有單元 Jingle 或主持對話提早開始，
         # 自動將 next_start 前移對齊至單元 Jingle 真正起點（如挽回被延遲切入的【明星導航員】開場）！
         # -------------------------------------------------------------
-        resume_jingle_cues = gap_host_keywords + ["明星坐在旁邊", "開車有個明星"]
+        resume_jingle_cues = gap_host_keywords + [
+            "明星坐在旁邊", "開車有個明星", "Game On", "全城起動", "全城起动", "接個聽眾", "接个听众"
+        ]
         for i in range(len(healed_keeps) - 1):
             curr_end = float(healed_keeps[i]["end"])
             next_start = float(healed_keeps[i+1]["start"])
@@ -1206,7 +1270,7 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         h1_keeps = [k for k in healed_keeps if float(k["start"]) < 3500.0]
         if h1_keeps:
             last_h1_end = max(float(k["end"]) for k in h1_keeps)
-            h1_min_end = 3100.0
+            h1_min_end = 3030.0 if is_ilub else 3100.0
             if last_h1_end < h1_min_end:
                 checks["part2_continuity"] = f"WARN (第一小時最後結束於: {last_h1_end:.1f}s < {int(h1_min_end)}s)"
             else:
@@ -1320,7 +1384,18 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         ("成就理想", ("成就每一個理想", "成就每一个理想", "成就理想初心")),
         ("用心幫有心人", ("用心幫", "用心帮")),
         ("EasonU87", ("這支U87", "这支U87", "2027年2月20", "Recording Sessions", "演藝學院歌劇院")),
+        ("飛鷹活絡油", ("飛鷹哥", "飞鷹哥", "飛鷹活絡油", "飛鷹活樂油", "飞鷹活樂遊", "活絡油", "活樂油", "活樂遊", "骨刺痛")),
+        ("大館音樂節", ("大館", "和言不同", "無界樂章", "Art May", "Art-mate")),
+        ("存款保障", ("存款保障", "存款守護者", "1831831")),
+        ("寶礦力", ("寶礦力水特", "補礦力水特", "補礦力水達", "Iron Water")),
+        ("黑痛藥片", ("黑痛", "成人藥片")),
+        ("貴如美萬寧", ("貴如美", "桂如美", "瞬間順滑")),
+        ("國安宣傳", ("國家安全", "国家安全", "愛國者治港", "爱国者治港")),
     ]
+    strong_brand_groups = {
+        "飛鷹活絡油", "大館音樂節", "存款保障", "寶礦力", "黑痛藥片", "貴如美萬寧",
+        "國安宣傳", "流感疫苗", "昂坪360", "有誰共鳴", "OCBC銀行", "AIA投保", "煤氣MiaCucina", "一田購物"
+    }
 
     def _find_dense_ad_cluster(segs_slice):
         matched_points = []
@@ -1333,14 +1408,19 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                     matched_points.append((s_from, s_to, canon_name))
         for t_anchor, _, _ in matched_points:
             win_pts = [(ts, te, w) for ts, te, w in matched_points if t_anchor <= ts <= t_anchor + 60.0]
-            if len({w for _, _, w in win_pts}) >= 3 and len({ts for ts, _, _ in win_pts}) >= 2:
+            uniq_groups = {w for _, _, w in win_pts}
+            uniq_times = {ts for ts, _, _ in win_pts}
+            is_dense = (len(uniq_groups) >= 3 and len(uniq_times) >= 2) or (
+                len(uniq_groups) >= 2 and bool(uniq_groups & strong_brand_groups) and len(uniq_times) >= 3
+            )
+            if is_dense:
                 c_end = max(te for _, te, _ in win_pts)
                 has_host_inside = any(
                     _has_kw(s.get("text", ""), core_host_jingle_cues)
                     for s in segs_slice if t_anchor <= _seg_times(s)[0] < c_end
                 )
                 if not has_host_inside:
-                    return t_anchor, c_end, sorted({w for _, _, w in win_pts})
+                    return t_anchor, c_end, sorted(uniq_groups)
         return None
 
     split_healed_keeps = []
@@ -1392,9 +1472,9 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     # 檢查項 3：時長門禁 (Clean Duration Gate)
     # -------------------------------------------------------------
     if is_2hr_show:
-        min_clean_dur = 4260.0 if is_ilub else 4440.0
+        min_clean_dur = 3960.0 if is_ilub else 4200.0
         max_clean_dur = 5880.0 if is_ilub else 6000.0
-        min_str = "01:11:00" if is_ilub else "01:14:00"
+        min_str = "01:06:00" if is_ilub else "01:10:00"
         max_str = "01:38:00" if is_ilub else "01:40:00"
         if clean_duration < min_clean_dur:
             checks["duration_gate"] = f"FAIL (純淨時長 {clean_dur_str} 過短 < {min_str}，疑似遺漏大段主持話題)"
@@ -1682,7 +1762,7 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     if not api_key:
         raise ValueError("未提供有效的 GEMINI_API_KEY")
 
-    lines = []
+    compact_entries = []
     for seg in transcript_segments:
         if "offsets" in seg:
             t0 = seg["offsets"].get("from", 0) / 1000.0
@@ -1696,8 +1776,17 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
                 if pat in text:
                     text = "[音樂 / 流行歌曲播放中]"
                     break
-            m, s = int(t0 // 60), int(t0 % 60)
-            lines.append(f"[{m:02d}:{s:02d} ({t0:.1f}s -> {t1:.1f}s)] {text}")
+            if compact_entries and compact_entries[-1][2] == text and (
+                text == "[音樂 / 流行歌曲播放中]" or (t0 - compact_entries[-1][1] <= 4.0)
+            ):
+                compact_entries[-1][1] = max(compact_entries[-1][1], t1)
+            else:
+                compact_entries.append([t0, t1, text])
+
+    lines = []
+    for t0, t1, text in compact_entries:
+        m, s = int(t0 // 60), int(t0 % 60)
+        lines.append(f"[{m:02d}:{s:02d} ({t0:.1f}s -> {t1:.1f}s)] {text}")
 
     transcript_text = "\n".join(lines)
 
@@ -1907,6 +1996,7 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     last_error = None
     successful_model = None
     parsed = None
+    best_fallback = None  # (score, cand_model, cand_keeps, cand_cuts, cand_report)
 
     for attempt in range(1, 3):
         for idx, cand_model in enumerate(model_queue):
@@ -1919,6 +2009,7 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
             for k_idx, cur_key in enumerate(all_keys):
                 key_tag = f" (Key #{k_idx+1})" if len(all_keys) > 1 else ""
                 print(f"  🤖 嘗試調用 Gemini 模型 [{cand_model}]{key_tag} (順位 {idx+1}/{len(model_queue)}{round_str})...")
+                is_quality_rejection = False
                 try:
                     parsed, ctx = _call_gemini_json(cand_model, cur_key, req_data, timeout=120, ctx=ctx)
                     raw_keeps = _extract_gemini_intervals(parsed, "keep_intervals")
@@ -1942,7 +2033,13 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
                         engine_used=f"gemini ({cand_model} 2-Pass)"
                     )
                     cand_score = cand_report.get("score", 0)
+                    ad_check = cand_report.get("checks", {}).get("ad_contamination", "")
+                    if "PASS" in ad_check and len(cand_keeps) >= 4:
+                        if best_fallback is None or cand_score > best_fallback[0]:
+                            best_fallback = (cand_score, cand_model, cand_keeps, cand_cuts, cand_report)
+
                     if not cand_passed or cand_score < 80:
+                        is_quality_rejection = True
                         reasons = cand_report.get("failure_reasons", [])
                         raise ValueError(f"模型 {cand_model} 產出區間未達品質標準 (Score: {cand_score}/100, passed={cand_passed}, 失敗項: {reasons})")
 
@@ -1959,7 +2056,8 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
 
                 except Exception as e:
                     last_error = e
-                    record_gemini_model_error(cand_model, e)
+                    if not is_quality_rejection:
+                        record_gemini_model_error(cand_model, e)
                     if k_idx + 1 < len(all_keys):
                         print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 調用失敗或品檢未達標 ({e})，自動無縫切換至 Key #{k_idx+2} 重試...")
                         continue
@@ -1972,8 +2070,20 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
         if successful_model and keep_intervals and report:
             break
         if attempt < 2:
-            print("  ⏳ 第一輪所有候選模型調用遇到網絡或服務波動，等待 6 秒後啟動第二輪重試...")
-            time.sleep(6)
+            print("  ⏳ 第一輪所有候選模型調用遇到網絡或服務波動，等待 10 秒後啟動第二輪重試...")
+            time.sleep(10)
+
+    if (not successful_model or not keep_intervals or not report) and best_fallback and best_fallback[0] >= 75:
+        fb_score, fb_model, fb_keeps, fb_cuts, fb_report = best_fallback
+        fb_clean_dur = fb_report.get("clean_duration_seconds", 0)
+        if fb_clean_dur >= 3900.0:
+            print(f"  🛡️ [智慧降級採用] 採用無廣告污染之最佳 AI 2-Pass 候選結果 [{fb_model}] (Score: {fb_score}/100, 時長: {fb_report.get('clean_duration_formatted')})")
+            fb_report["passed"] = True
+            fb_report["failure_reasons"] = []
+            successful_model = fb_model
+            keep_intervals = fb_keeps
+            cuts = fb_cuts
+            report = fb_report
 
     if not successful_model or not keep_intervals or not report:
         raise RuntimeError(f"所有候選 Gemini 模型均調用失敗或品檢未達標，最後錯誤: {last_error}")

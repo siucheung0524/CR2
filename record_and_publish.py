@@ -593,7 +593,7 @@ def main():
         # 預設先複製一份至 output_path 以防跳過去廣告
         shutil.copy2(raw_path, output_path)
 
-    # 2.5 自動切除廣告、新聞、天氣與交通 (預設開啟)
+    # 2.5 自動切除廣告、新聞、天氣與交通 (預設開啟，含雲端短暫波動自動冷卻重試)
     if not args.skip_remove_ads:
         try:
             print(f"[{datetime.now()}] 正在啟動自動去廣告處理 (Whisper 粵語語意識別)...")
@@ -606,6 +606,14 @@ def main():
                 output_file=cleaned_output_path,
                 model_path=args.whisper_model
             )
+            if not (is_cleaned and stats.get("inspection_passed", False) and os.path.exists(final_path)):
+                print(f"[{datetime.now()}] ⏳ 首輪 AI 去廣告或品檢未通過，等待 45 秒冷卻後自動執行第二次重試（直接複用現有逐字稿）...")
+                time.sleep(45)
+                final_path, is_cleaned, stats = process_audio_ad_removal(
+                    input_source,
+                    output_file=cleaned_output_path,
+                    model_path=args.whisper_model
+                )
             if is_cleaned and stats.get("inspection_passed", False) and os.path.exists(final_path):
                 # 替換為經品質品檢認證的純淨版音檔進行後續發布
                 output_path = final_path

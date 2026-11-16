@@ -89,14 +89,51 @@ def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, d
     SHOWNOTES_GEMINI_MODELS = [
         "gemini-3.5-flash-lite",
         "gemini-3.1-flash-lite",
-        "gemini-flash-lite-latest"
+        "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-3.6-flash",
+        "gemini-3-flash-preview"
     ]
+
+    def _extract_and_validate(text_str, expected_count):
+        if not text_str or "【第一節】" not in text_str:
+            return False, []
+        titles = []
+        body_lengths = []
+        cur_body_len = 0
+        in_sec = False
+        num_map = {"一": "1", "二": "2", "三": "3", "四": "4", "五": "5", "六": "6", "七": "7", "八": "8", "九": "9", "十": "10"}
+        for raw_line in text_str.splitlines():
+            s_line = raw_line.strip()
+            if not s_line:
+                continue
+            m = re.match(r'^[#*\s]*【第([一二三四五六七八九十\d]+)節】\s*(.+?)[#*\s]*$', s_line)
+            if m:
+                if in_sec:
+                    body_lengths.append(cur_body_len)
+                in_sec = True
+                cur_body_len = 0
+                sec_idx = m.group(1)
+                raw_title = m.group(2).strip()
+                norm_num = num_map.get(sec_idx, sec_idx)
+                titles.append(f"第 {norm_num} 節：{raw_title[:35]}")
+            elif in_sec:
+                cur_body_len += len(s_line)
+        if in_sec:
+            body_lengths.append(cur_body_len)
+        if len(titles) < expected_count or len(body_lengths) < expected_count:
+            return False, titles
+        if any(bl < 18 for bl in body_lengths[:expected_count]):
+            return False, titles
+        return True, titles
 
     try:
         ctx = ssl.create_default_context(cafile=certifi.where())
     except Exception:
         ctx = ssl._create_unverified_context()
     shownotes_text = None
+    clean_titles = []
+    expected_secs = len(keep_ranges)
 
     for cand_model in SHOWNOTES_GEMINI_MODELS:
         for k_idx, cur_key in enumerate(all_keys):
@@ -105,19 +142,27 @@ def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, d
                 req = urllib.request.Request(url, data=req_data, headers={"Content-Type": "application/json"})
                 with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=60) as resp:
                     res = json.loads(resp.read().decode("utf-8"))
-                    shownotes_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
-                    if shownotes_text and "【第一節】" in shownotes_text:
-                        print(f"  ✨ 成功使用模型 [{cand_model}] (Key #{k_idx+1}) 生成人性化節目簡介！(高配額 Lite 池)")
+                    cand_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    ok, cand_titles = _extract_and_validate(cand_text, expected_secs)
+                    if ok:
+                        shownotes_text = cand_text
+                        clean_titles = cand_titles
+                        print(f"  ✨ 成功使用模型 [{cand_model}] (Key #{k_idx+1}) 生成完整 {len(clean_titles)} 節人性化節目簡介！")
                         break
+                    else:
+                        print(f"  ⚠️ 模型 [{cand_model}] (Key #{k_idx+1}) 輸出簡介不完整 (僅 {len(cand_titles)}/{expected_secs} 節)，自動重試...")
             except Exception as e:
                 if "CERTIFICATE_VERIFY_FAILED" in str(e) or "certificate verify failed" in str(e):
                     ctx = ssl._create_unverified_context()
                     try:
                         with urllib.request.urlopen(req, data=req_data, context=ctx, timeout=60) as resp:
                             res = json.loads(resp.read().decode("utf-8"))
-                            shownotes_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
-                            if shownotes_text and "【第一節】" in shownotes_text:
-                                print(f"  ✨ 成功使用模型 [{cand_model}] (Key #{k_idx+1}) 生成人性化節目簡介！(高配額 Lite 池)")
+                            cand_text = res["candidates"][0]["content"]["parts"][0]["text"].strip()
+                            ok, cand_titles = _extract_and_validate(cand_text, expected_secs)
+                            if ok:
+                                shownotes_text = cand_text
+                                clean_titles = cand_titles
+                                print(f"  ✨ 成功使用模型 [{cand_model}] (Key #{k_idx+1}) 生成完整 {len(clean_titles)} 節人性化節目簡介！")
                                 break
                     except Exception as e2:
                         print(f"  ⚠️ 模型 [{cand_model}] (Key #{k_idx+1}) 生成簡介暫時繁忙: {e2}")
@@ -128,19 +173,6 @@ def generate_editorial_shownotes(transcript_json_path, keep_ranges, show_name, d
 
     if not shownotes_text:
         return None, []
-
-    # 解析出各節的乾淨標題供 M4A 章節使用 (例如 "第 1 節：名校舊生聯誼激罕聯乘女校")
-    clean_titles = []
-    lines = shownotes_text.splitlines()
-    for line in lines:
-        m = re.match(r'^[#*\s]*【第([一二三四五六七八九十\d]+)節】\s*(.+?)[#*\s]*$', line.strip())
-        if m:
-            sec_idx = m.group(1)
-            raw_title = m.group(2).strip()
-            # 轉換中文數字為阿拉伯數字方便播放器展示
-            num_map = {"一": "1", "二": "2", "三": "3", "四": "4", "五": "5", "六": "6", "七": "7", "八": "8", "九": "9", "十": "10"}
-            norm_num = num_map.get(sec_idx, sec_idx)
-            clean_titles.append(f"第 {norm_num} 節：{raw_title[:35]}")
 
     return shownotes_text, clean_titles
 
