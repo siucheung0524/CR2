@@ -275,6 +275,8 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
     break_start = None
     break_type = None
     last_ad_end = None
+    non_ad_resume_streak = 0
+    first_resume_sec = None
 
     for idx, seg in enumerate(segments):
         text = seg.get("text", "").strip()
@@ -291,6 +293,8 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
         is_ad_item = any(k in text for k in TRAFFIC_KEYWORDS + WEATHER_KEYWORDS + PSA_KEYWORDS + STATION_PROMOS + AD_KEYWORDS)
         if is_ad_item:
             last_ad_end = t_sec
+            non_ad_resume_streak = 0
+            first_resume_sec = None
 
         # 1. 檢查整點新聞破口 (Top-of-the-hour break)
         # 嚴格限制：新聞只會出現在整點（50~65 分鐘 / 3000s~3900s，以及節目結尾 110~116 分鐘 / 6600s~6960s）
@@ -356,20 +360,35 @@ def detect_ad_intervals(segments, total_duration, time_offset=0.0):
             print(f"  🛑 [引擎1] 半點廣告破口開始於: {timedelta(seconds=int(break_start))} ({break_start:.2f}s) [報時/廣告: {text[:25]}]")
             continue
 
-        # 3. 檢查破口是否遇到節目專屬 Jingle / Bumper 重開
+        # 3. 檢查破口是否遇到節目專屬 Jingle / Bumper 重開或主持連續對話恢復
         if in_break:
             is_jingle = any(kw.lower() in text.lower() for kw in PROGRAM_JINGLE_KEYWORDS)
-            # 安全機制：若超過 900 秒仍未遇到 Jingle，強制截斷破口
-            if is_jingle or (f_sec - break_start > 900.0):
+            is_halluc = any(p in text for p in HALLUCINATION_PATTERNS)
+            min_break_len = 480.0 if break_type == "整點新聞破口" else 240.0
+            max_break_len = 1120.0 if break_type == "整點新聞破口" else 680.0
+            if not is_ad_item and not is_halluc and (f_sec - break_start >= min_break_len) and (last_ad_end is None or f_sec - last_ad_end >= 5.0):
+                if non_ad_resume_streak == 0:
+                    first_resume_sec = f_sec
+                non_ad_resume_streak += 1
+            else:
+                if is_ad_item or is_halluc:
+                    non_ad_resume_streak = 0
+                    first_resume_sec = None
+
+            is_dialogue_resumed = (non_ad_resume_streak >= 4 and first_resume_sec is not None)
+            if is_jingle or is_dialogue_resumed or (f_sec - break_start > max_break_len):
                 in_break = False
-                end_cut = max(break_start + 5.0, f_sec - 1.5)
+                resume_anchor = first_resume_sec if (is_dialogue_resumed and not is_jingle) else f_sec
+                end_cut = max(break_start + 5.0, resume_anchor - 1.0)
+                non_ad_resume_streak = 0
+                first_resume_sec = None
                 cuts.append({
                     "start": round(break_start, 2),
                     "end": round(end_cut, 2),
                     "duration": round(end_cut - break_start, 2),
                     "sample_text": f"{break_type} (已保留報時/接回Jingle)"
                 })
-                print(f"  🎙️ [引擎1] {break_type}結束於 Jingle 前: {timedelta(seconds=int(end_cut))} ({end_cut:.2f}s) (時長: {end_cut - break_start:.1f}s)")
+                print(f"  🎙️ [引擎1] {break_type}結束於 Jingle/對話前: {timedelta(seconds=int(end_cut))} ({end_cut:.2f}s) (時長: {end_cut - break_start:.1f}s)")
 
     # 若錄音在破口結束前就結束（例如節目尾聲新聞緩衝）
     if in_break and break_start is not None:
@@ -2073,6 +2092,70 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
             print("  ⏳ 第一輪所有候選模型調用遇到網絡或服務波動，等待 10 秒後啟動第二輪重試...")
             time.sleep(10)
 
+    # 若單次 2 小時全篇請求因體積過大全部 Timeout/503，啟動【分上下半場雙請求模式 (Split-Hour Chunked AI Mode)】
+    if not successful_model or not keep_intervals or not report:
+        print("  🧩 [分時段雙半場精準模式] 啟動上下半場獨立短請求拆解（大幅縮減單次 Token 體積與防 Timeout）...")
+        h1_lines = [
+            f"[{int(t0//60):02d}:{int(t0%60):02d} ({t0:.1f}s -> {t1:.1f}s)] {txt}"
+            for t0, t1, txt in compact_entries if t0 <= 3450.0
+        ]
+        h2_lines = [
+            f"[{int(t0//60):02d}:{int(t0%60):02d} ({t0:.1f}s -> {t1:.1f}s)] {txt}"
+            for t0, t1, txt in compact_entries if t1 >= 3350.0
+        ]
+        h1_prompt = (
+            f"你是一位專業的香港商台叱咤903廣播節目剪輯專家。\n{show_info}\n{part_rules}\n"
+            "請僅針對以下【第一小時（上半場 0s ~ 3450s，包含 Part 1 與 Part 2）】逐字稿，"
+            "輸出整點新聞報時（約 3150s~3250s）之前的正片保留區間 JSON：{\"keep_intervals\": [{\"start\": 0.0, \"end\": 0.0, \"description\": \"...\"}]}\n\n"
+            + "\n".join(h1_lines)
+        )
+        h2_prompt = (
+            f"你是一位專業的香港商台叱咤903廣播節目剪輯專家。\n{show_info}\n{part_rules}\n"
+            "請僅針對以下【第二小時（下半場 3350s ~ 結束，包含 Part 3 與 Part 4）】逐字稿，"
+            "輸出整點新聞與交通廣告結束後（約 3650s~4150s 單元 Jingle 起拍）至節目完結片尾曲結束（12:00/19:00 新聞前）的正片保留區間 JSON："
+            "{\"keep_intervals\": [{\"start\": 0.0, \"end\": 0.0, \"description\": \"...\"}]}\n\n"
+            + "\n".join(h2_lines)
+        )
+        req_h1 = json.dumps({"contents": [{"parts": [{"text": h1_prompt}]}], "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}}).encode("utf-8")
+        req_h2 = json.dumps({"contents": [{"parts": [{"text": h2_prompt}]}], "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}}).encode("utf-8")
+
+        for cand_model in model_queue:
+            if "lite" in cand_model.lower():
+                continue
+            for k_idx, cur_key in enumerate(all_keys):
+                try:
+                    p1_json, ctx = _call_gemini_json(cand_model, cur_key, req_h1, timeout=90, ctx=ctx)
+                    p2_json, ctx = _call_gemini_json(cand_model, cur_key, req_h2, timeout=90, ctx=ctx)
+                    k1 = [x for x in _extract_gemini_intervals(p1_json, "keep_intervals") if float(x.get("end", 0)) <= 3450.0]
+                    k2 = [x for x in _extract_gemini_intervals(p2_json, "keep_intervals") if float(x.get("start", 0)) >= 3400.0]
+                    merged_raw = k1 + k2
+                    if len(merged_raw) >= 4:
+                        audited_keeps = audit_boundaries_with_gemini(
+                            raw_keeps=merged_raw,
+                            transcript_segments=transcript_segments,
+                            show_code=show_code,
+                            api_key=cur_key,
+                            model=cand_model,
+                            total_duration=total_duration
+                        )
+                        cand_passed, cand_keeps, cand_cuts, cand_report = inspect_and_verify_cut_quality(
+                            audited_keeps, cuts=[], total_duration=total_duration,
+                            transcript_segments=transcript_segments, show_code=show_code,
+                            engine_used=f"gemini ({cand_model} split-hour 2-Pass)"
+                        )
+                        if cand_passed and cand_report.get("score", 0) >= 80:
+                            successful_model = f"{cand_model}-split"
+                            keep_intervals = cand_keeps
+                            cuts = cand_cuts
+                            report = cand_report
+                            print(f"  ✨ [分時段雙半場模式] 模型 [{cand_model}] 分析成功並通過品檢門禁 (評分: {cand_report.get('score')}/100)！")
+                            break
+                except Exception as split_err:
+                    last_error = split_err
+                    continue
+            if successful_model and keep_intervals and report:
+                break
+
     if (not successful_model or not keep_intervals or not report) and best_fallback and best_fallback[0] >= 75:
         fb_score, fb_model, fb_keeps, fb_cuts, fb_report = best_fallback
         fb_clean_dur = fb_report.get("clean_duration_seconds", 0)
@@ -2107,22 +2190,63 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     return keep_intervals, cuts, successful_model, report
 
 
+def _snap_boundary_to_silence(input_file, target_sec, total_duration, is_start=True):
+    """利用 FFmpeg silencedetect 偵測切點前後 ±0.6s 內的聲學靜音氣口，避免切在字音正中間"""
+    win_start = max(0.0, target_sec - (0.65 if is_start else 0.45))
+    win_end = min(total_duration, target_sec + (0.40 if is_start else 0.70))
+    win_dur = win_end - win_start
+    if win_dur <= 0.2:
+        return target_sec
+    cmd = [
+        FFMPEG_BIN, "-hide_banner", "-nostats",
+        "-ss", f"{win_start:.3f}", "-t", f"{win_dur:.3f}",
+        "-i", input_file,
+        "-af", "silencedetect=noise=-34dB:d=0.10",
+        "-f", "null", "-"
+    ]
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=4)
+        stderr_out = res.stderr or ""
+        s_starts = [win_start + float(m.group(1)) for m in re.finditer(r"silence_start:\s*([0-9.]+)", stderr_out)]
+        s_ends = [win_start + float(m.group(1)) for m in re.finditer(r"silence_end:\s*([0-9.]+)", stderr_out)]
+        if is_start and s_ends:
+            best_end = min(s_ends, key=lambda x: abs(x - target_sec))
+            if abs(best_end - target_sec) <= 0.55:
+                return round(max(0.0, best_end - 0.04), 2)
+        elif (not is_start) and s_starts:
+            best_st = min(s_starts, key=lambda x: abs(x - target_sec))
+            if abs(best_st - target_sec) <= 0.60:
+                return round(min(total_duration, best_st + 0.06), 2)
+    except Exception:
+        pass
+    return target_sec
+
+
 def assemble_cleaned_audio(input_file, cuts, output_file, total_duration, keep_metadata=None, clean_chapter_titles=None):
-    """根據切除區間，調用 FFmpeg 進行精準無損無縫拼接（含 120ms 微淡入淡出防爆音與原生 M4A 乾淨章節標記）"""
+    """根據切除區間，調用 FFmpeg 進行精準無損無縫拼接（含聲學氣口對齊、120ms 微淡入淡出防爆音與原生 M4A 乾淨章節標記）"""
     if not cuts:
         print("未偵測到需要切除的廣告區間，直接複製音訊。")
         shutil.copy2(input_file, output_file)
         return []
 
-    # 計算保留段落 (Keep Intervals)
-    keep_intervals = []
+    # 計算保留段落 (Keep Intervals) 並進行聲學靜音氣口微調 (Acoustic Silence Snapping)
+    raw_keep_intervals = []
     cursor = 0.0
     for cut in cuts:
         if cut["start"] > cursor + 0.5:
-            keep_intervals.append((cursor, cut["start"]))
+            raw_keep_intervals.append((cursor, cut["start"]))
         cursor = max(cursor, cut["end"])
     if cursor < total_duration - 0.5:
-        keep_intervals.append((cursor, total_duration))
+        raw_keep_intervals.append((cursor, total_duration))
+
+    keep_intervals = []
+    for ks, ke in raw_keep_intervals:
+        snapped_s = _snap_boundary_to_silence(input_file, ks, total_duration, is_start=True)
+        snapped_e = _snap_boundary_to_silence(input_file, ke, total_duration, is_start=False)
+        if snapped_e - snapped_s >= 5.0:
+            keep_intervals.append((snapped_s, snapped_e))
+        else:
+            keep_intervals.append((ks, ke))
 
     # 對應每個保留段落的乾淨章節名稱 (供 M4A 章節與播放器展示)
     chapter_entries = []

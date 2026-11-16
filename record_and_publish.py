@@ -521,7 +521,28 @@ def main():
         duration = args.duration or show_cfg["default_duration"]
         tag = f"{show_cfg['guid_prefix']}{date_str}"
 
-        # 0. 檢查今天是否已經發布過 Release，避免喚醒或重開機重複執行
+        # 0. 自動巡檢過去 3 天是否有已錄好母帶但尚未發布純淨版 Release 之集數（如前一日遇雲端故障未完成）
+        for past_i in range(1, 4):
+            past_dt = now_hk - timedelta(days=past_i)
+            if past_dt.weekday() >= 5:
+                continue
+            past_dstr = past_dt.strftime("%Y%m%d")
+            past_tag = f"{show_cfg['guid_prefix']}{past_dstr}"
+            past_raw = os.path.join(temp_dir, f"{past_tag}.raw.m4a")
+            if os.path.exists(past_raw) and os.path.getsize(past_raw) > 15 * 1024 * 1024:
+                try:
+                    p_rel = github_api_request(f"https://api.github.com/repos/{GITHUB_REPO}/releases/tags/{past_tag}")
+                    has_p_rel = bool(p_rel and "id" in p_rel)
+                except Exception:
+                    has_p_rel = False
+                if not has_p_rel:
+                    print(f"[{datetime.now()}] 🔧 [自動補救巡檢] 發現過去集數 ({past_tag}) 已有本地母帶但尚未發布純淨版 Release，立即自動補跑發布...")
+                    subprocess.run([
+                        sys.executable, os.path.abspath(__file__),
+                        "--show", args.show, "--input-file", past_raw, "--date", past_dstr, "--skip-prune"
+                    ], check=False)
+
+        # 0.1 檢查今天是否已經發布過 Release，避免喚醒或重開機重複執行
         try:
             rel_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/tags/{tag}"
             existing_rel = github_api_request(rel_url)
@@ -537,7 +558,7 @@ def main():
         print(f"錄音時長: {duration} 秒 ({duration/60:.1f} 分鐘)")
         print("=" * 60)
 
-        # 檢查是否已過首播結束時間（例如休眠喚醒或開機補跑）
+        # 檢查是否已過首播結束時間（例如休眠喚醒、二次補救巡檢或開機補跑）
         end_time_str = show_cfg.get("broadcast_end_time", "12:15")
         end_h, end_m = map(int, end_time_str.split(":"))
         is_past_broadcast = (now_hk.hour > end_h) or (now_hk.hour == end_h and now_hk.minute >= end_m)
@@ -548,11 +569,16 @@ def main():
         output_path = os.path.join(temp_dir, asset_filename)
 
         if is_past_broadcast and not args.stream_url:
-            print(f"[{datetime.now()}] 💡 檢測到目前時間 ({now_hk.strftime('%H:%M')}) 已過首播時段 ({end_time_str})，跳過即時串流錄音，直接從網路官方存檔下載今日完整母帶...")
-            fallback_success = fetch_archive_from_web(show_cfg, date_str, raw_path, max_attempts=5, delay_sec=60)
-            if not fallback_success:
-                raise RuntimeError("已過首播時間且無法從網路存檔取得今日母帶，終止執行。")
-            file_size = os.path.getsize(raw_path)
+            from ad_remover import get_audio_duration
+            if os.path.exists(raw_path) and get_audio_duration(raw_path) >= (duration * 0.85):
+                file_size = os.path.getsize(raw_path)
+                print(f"[{datetime.now()}] ♻️ 發現本地已存在今日完整原始母帶 ({raw_path}, {file_size/(1024*1024):.2f} MB)，直接複用進行 AI 去廣告，免重新下載！")
+            else:
+                print(f"[{datetime.now()}] 💡 檢測到目前時間 ({now_hk.strftime('%H:%M')}) 已過首播時段 ({end_time_str})，跳過即時串流錄音，直接從網路官方存檔下載今日完整母帶...")
+                fallback_success = fetch_archive_from_web(show_cfg, date_str, raw_path, max_attempts=5, delay_sec=60)
+                if not fallback_success:
+                    raise RuntimeError("已過首播時間且無法從網路存檔取得今日母帶，終止執行。")
+                file_size = os.path.getsize(raw_path)
         else:
             # 1. 取得串流網址
             if args.stream_url:
