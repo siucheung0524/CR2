@@ -88,8 +88,8 @@ STATION_PROMOS = [
     "寫一秒", "新一秒", "七九零三", "即七九零三", "色測903", "釋測903", "釋測九零三", "跑高山", "爬下山", "借一秒", "者1秒",
     "這一秒", "这一秒", "7703", "77903", "天天實在", "天天实在",
     "王先生想你", "在晴朗的一天出發", "晴朗", "林海峰", "軟紙劫", "阮子健", "道格小島",
-    "Pay for the day", "為你親自打點", "同年的自己", "港鐵接軌", "貫通地上地下", "以即時新聞",
-    "Be Before Bed Time", "be before bed time", "不准睡先", "鄧小巧", "拾回自己的空間", "做回自己",
+    "Pay for the day", "為你親自打點", "同年的自己", "港鐵接軌", "港铁接軌", "貫通地上地下", "贯通地上地下", "以即時新聞", "關心你生活的每一程",
+    "Be Before Bed Time", "be before bed time", "不准睡先", "鄧小巧", "拾回自己的空間",
     "美味開餐", "美食嘉年華", "香港美食嘉年華",
     "知芬衣", "知婚姨", "朱芬", "知多知那麼多", "知多知咁多", "Centerminia", "善男信女", "鍾雪瑩", "楊偉倫",
     "星矮粒", "聖艾粒", "下午五至七", "啦啦星之中八拍", "黃先生想你點", "點話點好",
@@ -100,7 +100,9 @@ STATION_PROMOS = [
     "Always be with you", "周六快樂時代", "周六快乐时代", "Listen to Eason", "Listen to Eastern",
     "Lesson to Ethan", "與我常在", "与我常在", "叱咤樂壇", "戚冊學談", "戚測樂壇", "刺殺樂壇", "七七樂壇",
     "專業推介", "专业推介", "新上榜", "Oscar失眠藥", "Oscar 失眠藥", "一路漂浮", "一路飘放",
-    "咆哮山莊", "爬敲山莊", "Music Break", "廣東歌關注組", "路人甲團火"
+    "咆哮山莊", "爬敲山莊", "Music Break", "廣東歌關注組", "路人甲團火",
+    "GilikGilikEX", "朱利朱利EX", "聖誕禮貌卡", "圣诞礼贸卡", "聖誕禮物卡", "交換聖誕禮貌卡", "交换圣诞礼贸卡",
+    "九龍廣播道3號", "九龙广播道3号", "薛俊寧", "薛俊宁", "青山樂壇", "謝茜嘉", "謝西家", "梁文禮", "Woody"
 ]
 
 # 6. 商業特約廣告詞庫
@@ -778,7 +780,8 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         "邊個痴線", "唯有自己", "啦啦啦啦"
     ] if is_ilub else [
         "Bad Girl", "大過佬", "森美", "阿正", "Elsie", "妹頭", "吹水未夠班", "手機碌多咗", "十句講曬",
-        "衰佬", "雞仔好人", "街仔好人", "新day", "Everyday is Sunday", "Everyday is", "Monday Tuesday",
+        "衰佬", "衰老", "衰老CLS", "衰老 CLS", "Customer Love Service",
+        "雞仔好人", "街仔好人", "新day", "Everyday is Sunday", "Everyday is", "Monday Tuesday",
         "今天有什麼新", "掛住你", "來大笑代替上路", "粒粒皆辛苦"
     ]
     gap_news_keywords = ["18點", "18:30", "19點", "六點", "七點", "5時半", "五點半", "六點半"] if is_ilub else ["11點", "11:30", "12點", "10時半", "十點半", "十一點半"]
@@ -788,7 +791,10 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         "903FORSTAR", "All-Star", "籃球賽", "男童賽", "古天樂", "古天駱", "歌星勇士隊", "世界航空",
         "跳島遊", "跳渡游", "有誰共鳴", "有谁共鸣", "此時此刻", "此时此刻", "50881903", "50-881-903",
         "專業推介", "专业推介", "新上榜", "三甲歌", "三甲位置", "冠軍作品", "冠军作品", "Good morning",
-        "晚上九至十", "同你流汗", "體育資訊", "心跳行星", "八五二零", "這一秒 新一秒", "这一秒 新一秒"
+        "晚上九至十", "同你流汗", "體育資訊", "心跳行星", "八五二零", "這一秒 新一秒", "这一秒 新一秒",
+        "GilikGilikEX", "朱利朱利EX", "聖誕禮貌卡", "圣诞礼贸卡", "聖誕禮物卡", "交換聖誕禮貌卡", "交换圣诞礼贸卡",
+        "九龍廣播道3號", "九龙广播道3号", "薛俊寧", "薛俊宁", "青山樂壇", "謝茜嘉", "謝西家", "梁文禮", "Woody",
+        "晚上11至12", "晚上十一至十二", "下午十二至二", "下周十二至二"
     ]
     outro_ad_markers = [
         "喜療駝", "藥膏", "痛腳", "雙人套房", "小中瓶", "精華水", "綠色殯葬", "綠色笨藏",
@@ -856,7 +862,13 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     # -------------------------------------------------------------
     # 檢查項 0.1：段落結尾防誤吞廣告/宣傳回縮 (Boundary Tail Ad Pullback)
     # 若某正片段落結尾最後 45 秒內已進入廣告、節目宣傳、報時，自動回縮至廣告開始前
+    # （防誤殺：純報時必須整句為報時語，且若回縮點後仍有 >= 3 句或 >= 10s 連續非廣告主持對話則視為口語閒聊不回縮）
     # -------------------------------------------------------------
+    pure_time_re = re.compile(
+        r'^(?:現在|现在|依家|而家|時間|时间|時間來到|时间来到)?\s*'
+        r'(?:10|11|12|5|6|7|17|18|19|十|十一|十二|五|六|七)'
+        r'(?:[:：](?:00|30)|(?:點|点|時|时)(?:半|整|正)?)[。，,!\s]*$'
+    )
     for k in healed_keeps:
         k_st = float(k["start"])
         k_et = float(k["end"])
@@ -869,26 +881,35 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
             if tail_window <= _seg_times(s)[0] < k_et
         ]
 
+        non_ad_after_count = 0
         for s in tail_segs:
             s_from, s_to = _seg_times(s)
             s_txt = s.get("text", "").strip()
-            is_pure_time = any(w in s_txt for w in HALF_HOUR_KEYWORDS + TIME_ANNOUNCEMENT_KEYWORDS) and (len(s_txt) <= 8) and not _has_kw(s_txt, gap_host_keywords)
+            is_pure_time = bool(pure_time_re.match(s_txt)) and not _has_kw(s_txt, gap_host_keywords)
             is_ad_seg = _has_kw(s_txt, tail_ad_stop_words) or is_pure_time
             if is_ad_seg:
                 if earliest_tail_ad is None:
                     earliest_tail_ad = s_from
                     earliest_ad_text = s_txt
+                non_ad_after_count = 0
             else:
                 if _has_kw(s_txt, gap_host_keywords + PROGRAM_JINGLE_KEYWORDS):
                     earliest_tail_ad = None
                     earliest_ad_text = ""
+                    non_ad_after_count = 0
+                elif earliest_tail_ad is not None and not any(p in s_txt for p in HALLUCINATION_PATTERNS) and len(s_txt) >= 2:
+                    non_ad_after_count += 1
+                    if non_ad_after_count >= 3:
+                        earliest_tail_ad = None
+                        earliest_ad_text = ""
+                        non_ad_after_count = 0
 
         if earliest_tail_ad is not None and (k_et - earliest_tail_ad >= 0.5):
             healed_items.append(f"段落結尾廣告回縮：由 {k_et:.1f}s 提早回縮至 {earliest_tail_ad:.1f}s (切除誤吞之宣傳/商業廣告: {earliest_ad_text[:20]})")
             k["end"] = round(earliest_tail_ad, 2)
 
     # -------------------------------------------------------------
-        # 檢查項 0.2：段落開頭防誤吞廣告/宣傳後推 (Boundary Head Ad/Promo Trimming)
+    # 檢查項 0.2：段落開頭防誤吞廣告/宣傳後推 (Boundary Head Ad/Promo Trimming)
     # 若 Part 2+ 開頭前 105 秒內出現明顯電台宣傳片或商業廣告（且尚未出現主持或節目 Jingle），自動將起點推後至廣告結束處
     # -------------------------------------------------------------
     head_host_dialogue_cues = core_host_jingle_cues + [
@@ -904,6 +925,7 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         latest_head_ad_text = ""
         head_window_end = min(k_et - 30.0, k_st + 105.0)
         non_ad_speech_count = 0
+        stop_regular_ad_scan = False
         for s in transcript_segments:
             s_from, s_to = _seg_times(s)
             if s_to <= k_st:
@@ -913,7 +935,12 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
             s_txt = s.get("text", "").strip()
             if _has_kw(s_txt, head_host_dialogue_cues):
                 break
-            if _has_kw(s_txt, tail_ad_stop_words):
+            if _has_kw(s_txt, promo_block_markers):
+                latest_head_ad_end = max(latest_head_ad_end or k_st, min(s_to, k_et - 30.0))
+                latest_head_ad_text = s_txt
+                non_ad_speech_count = 0
+                stop_regular_ad_scan = False
+            elif (not stop_regular_ad_scan) and _has_kw(s_txt, tail_ad_stop_words):
                 latest_head_ad_end = max(latest_head_ad_end or k_st, min(s_to, k_et - 30.0))
                 latest_head_ad_text = s_txt
                 non_ad_speech_count = 0
@@ -921,10 +948,18 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                 if not any(p in s_txt for p in HALLUCINATION_PATTERNS) and len(s_txt) >= 2:
                     non_ad_speech_count += 1
                     if non_ad_speech_count >= 5:
-                        break
+                        stop_regular_ad_scan = True
         if latest_head_ad_end is not None and (latest_head_ad_end - k_st >= 1.5):
-            healed_items.append(f"段落開頭廣告後推：由 {k_st:.1f}s 延後至 {latest_head_ad_end:.1f}s (切除開頭誤吞宣傳/商業廣告: {latest_head_ad_text[:20]})")
-            k["start"] = round(latest_head_ad_end, 2)
+            # 若宣傳片尾聲緊接 10 秒內出現單元 Jingle，精準對齊至 Jingle 起拍點
+            aligned_end = latest_head_ad_end
+            for s in transcript_segments:
+                sf, _ = _seg_times(s)
+                if latest_head_ad_end <= sf <= latest_head_ad_end + 12.0:
+                    if _has_kw(s.get("text", ""), head_host_dialogue_cues):
+                        aligned_end = sf
+                        break
+            healed_items.append(f"段落開頭廣告後推：由 {k_st:.1f}s 延後至 {aligned_end:.1f}s (切除開頭誤吞宣傳/商業廣告: {latest_head_ad_text[:20]})")
+            k["start"] = round(aligned_end, 2)
 
     # -------------------------------------------------------------
     # 檢查項 0.3：破口內電台宣傳片孤島自動剔除 (Isolated Promo Island Removal)
@@ -1298,9 +1333,118 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
             checks["part2_continuity"] = "FAIL (缺少第一小時下半段)"
             failure_reasons.append("缺少第一小時下半段")
 
+        # 2.45 半點破口防橫跨自癒保護 (11:30 或 18:30 半點廣告/天氣/宣傳破口，嚴禁單一正片區間橫跨半點大破口！)
+        half_break_label = "18:30" if is_ilub else "11:30"
+        h2_split_keeps = []
+        for k in healed_keeps:
+            k_st = float(k["start"])
+            k_et = float(k["end"])
+            if k_st < 4950.0 and k_et > 5420.0:
+                scan_lo = max(k_st + 60.0, 4880.0)
+                scan_hi = min(k_et - 60.0, 5680.0)
+                span_segs = [s for s in transcript_segments if scan_lo <= _seg_times(s)[0] <= scan_hi]
+                strong_half_cues = (
+                    promo_block_markers + WEATHER_KEYWORDS + TRAFFIC_KEYWORDS +
+                    ["天文台", "相對濕度", "相对湿度", "空氣質素", "空气质素", "萬寧", "万宁", "貴如美", "桂如美", "歸如美", "有誰共鳴", "有谁共鸣"]
+                )
+                break_hits = []
+                for s in span_segs:
+                    sf, st_ = _seg_times(s)
+                    stxt = s.get("text", "").strip()
+                    if _has_kw(stxt, core_host_jingle_cues):
+                        continue
+                    is_pt = bool(pure_time_re.match(stxt))
+                    is_strong = is_pt or _has_kw(stxt, strong_half_cues)
+                    is_ad = is_strong or _has_kw(stxt, tail_ad_stop_words)
+                    if is_ad:
+                        break_hits.append((sf, st_, is_strong, stxt))
+
+                strong_in_core = [x for x in break_hits if 4940.0 <= x[0] <= 5380.0 and x[2]]
+                if len(break_hits) >= 3 and len(strong_in_core) >= 2:
+                    # 尋找半點破口起點：取 4920s~5220s 間第一個強破口點（且之後到 5220s 無主持 Jingle 恢復）
+                    found_hb_st = None
+                    for sf, st_, is_strong, _ in break_hits:
+                        if 4920.0 <= sf <= 5220.0 and is_strong:
+                            has_host_soon = any(
+                                _has_kw(s.get("text", ""), core_host_jingle_cues)
+                                for s in span_segs if sf < _seg_times(s)[0] <= min(sf + 120.0, 5220.0)
+                            )
+                            if not has_host_soon:
+                                found_hb_st = sf
+                                break
+                    if found_hb_st is None:
+                        found_hb_st = strong_in_core[0][0]
+
+                    # 尋找半點破口終點：優先在 found_hb_st + 140s ~ 5680s 之間找第一個單元 Jingle 起拍點（且後面 90s 內無強廣告/天氣/宣傳）
+                    found_hb_et = None
+                    for s in span_segs:
+                        sf, st_ = _seg_times(s)
+                        if sf < found_hb_st + 140.0:
+                            continue
+                        stxt = s.get("text", "").strip()
+                        if _has_kw(stxt, core_host_jingle_cues):
+                            has_ad_soon = any(
+                                _has_kw(s2.get("text", ""), strong_half_cues)
+                                for s2 in span_segs if sf < _seg_times(s2)[0] <= sf + 90.0
+                            )
+                            if not has_ad_soon:
+                                found_hb_et = sf
+                                break
+
+                    # 若 Whisper 未辨識出單元 Jingle，則找最後一則廣告/宣傳/天氣結束後，且後續 90s 無再出現強廣告的連續正片對話起點
+                    if found_hb_et is None:
+                        last_ad_in_break = found_hb_st + 140.0
+                        for s in span_segs:
+                            sf, st_ = _seg_times(s)
+                            if sf < found_hb_st or sf > 5620.0:
+                                continue
+                            stxt = s.get("text", "").strip()
+                            if _has_kw(stxt, strong_half_cues) or _has_kw(stxt, tail_ad_stop_words) or bool(pure_time_re.match(stxt)):
+                                last_ad_in_break = max(last_ad_in_break, st_)
+                        resume_streak = 0
+                        first_resume_t = None
+                        for s in span_segs:
+                            sf, st_ = _seg_times(s)
+                            if sf < last_ad_in_break - 0.5:
+                                continue
+                            stxt = s.get("text", "").strip()
+                            if not any(p in stxt for p in HALLUCINATION_PATTERNS) and len(stxt) >= 2:
+                                if resume_streak == 0:
+                                    first_resume_t = sf
+                                resume_streak += 1
+                                if resume_streak >= 3 and first_resume_t is not None:
+                                    found_hb_et = first_resume_t
+                                    break
+                        if found_hb_et is None and last_ad_in_break > found_hb_st + 140.0:
+                            found_hb_et = last_ad_in_break
+
+                    if found_hb_et and (found_hb_et - found_hb_st >= 140.0) and (found_hb_st - k_st >= 60.0) and (k_et - found_hb_et >= 180.0):
+                        healed_items.append(
+                            f"{half_break_label} 半點破口防橫跨自癒拆分：區間異常跨越半點廣告破口（{k_st:.1f}s~{k_et:.1f}s），"
+                            f"自動於 {found_hb_st:.1f}s 截斷並於 {found_hb_et:.1f}s 接回 Part 4"
+                            f"（切除中途 {found_hb_et - found_hb_st:.1f}s 半點報時、天氣、宣傳與商業廣告）"
+                        )
+                        h2_split_keeps.append({
+                            "start": k_st,
+                            "end": round(found_hb_st, 2),
+                            "description": f"Part 3b: {half_break_label} 半點破口前正片"
+                        })
+                        h2_split_keeps.append({
+                            "start": round(found_hb_et, 2),
+                            "end": k_et,
+                            "description": f"Part 4: {half_break_label} 半點破口後單元 Jingle 接回至完結"
+                        })
+                        continue
+            h2_split_keeps.append(k)
+        healed_keeps = h2_split_keeps
+
         # 2.4 Part 3 結束點檢驗 (11:30 或 18:30 半點前單元遊戲)
-        h2_first_keeps = [k for k in healed_keeps if 3400.0 <= float(k["start"]) < 5200.0]
-        if h2_first_keeps:
+        h2_crossing = [k for k in healed_keeps if float(k["start"]) < 4950.0 and float(k["end"]) > 5420.0]
+        h2_first_keeps = [k for k in healed_keeps if 3400.0 <= float(k["start"]) < 5200.0 and float(k["end"]) <= 5350.0]
+        if h2_crossing:
+            checks["part3_continuity"] = f"FAIL (單一段落橫跨 {half_break_label} 半點大破口: {h2_crossing[0]['start']}s~{h2_crossing[0]['end']}s)"
+            failure_reasons.append(f"單一段落橫跨 {half_break_label} 半點廣告破口")
+        elif h2_first_keeps:
             last_h2_first_end = max(float(k["end"]) for k in h2_first_keeps)
             if last_h2_first_end < 4800.0:
                 checks["part3_continuity"] = f"WARN (第二小時上半段結束於: {last_h2_first_end:.1f}s < 4800s)"
@@ -1391,13 +1535,13 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         ("條款細則", ("受條款及細則約束", "受条款及细则约束", "條款及細則", "条款及细则", "完整條款", "完整条款", "保單契約", "保单契约")),
         ("借定唔借", ("借定唔借", "還得到先好借")),
         ("防騙/食安", ("防騙視伏器", "食安中心提提你")),
-        ("天氣預報", ("天氣預測", "天气预测", "天氣預算", "本港地區", "本港地区")),
+        ("天氣預報", ("天氣預測", "天气预测", "天氣預算", "本港地區", "本港地区", "本安地區", "本安地区", "天文台", "相對濕度", "相对湿度", "空氣質素", "空气质素", "季後風", "季候風")),
         ("心跳行星", ("心跳行星", "八五二零")),
         ("一田購物", ("一田購物", "來一田")),
         ("煤氣MiaCucina", ("Mia Cucina", "Mia Katrina", "名氣家", "煤氣煮食爐")),
         ("AIA投保", ("AIA",)),
         ("網上/獨立投保", ("網上投保", "网上投保", "獨立投保", "独立投保")),
-        ("新歌宣傳", ("全新單曲", "各大音樂平台")),
+        ("新歌宣傳", ("全新單曲", "全新单曲", "最新單曲", "最新单曲", "各大音樂平台", "各大音乐平台", "我年輕過", "我年轻过")),
         ("OCBC銀行", ("OCBC", "華僑銀行", "华翘银行")),
         ("財富管理", ("財富管理", "财富管理")),
         ("成就理想", ("成就每一個理想", "成就每一个理想", "成就理想初心")),
@@ -1408,12 +1552,17 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         ("存款保障", ("存款保障", "存款守護者", "1831831")),
         ("寶礦力", ("寶礦力水特", "補礦力水特", "補礦力水達", "Iron Water")),
         ("黑痛藥片", ("黑痛", "成人藥片")),
-        ("貴如美萬寧", ("貴如美", "桂如美", "瞬間順滑")),
+        ("貴如美萬寧", ("貴如美", "桂如美", "歸如美", "瞬間順滑", "萬寧獨家", "万宁独家", "萬寧")),
         ("國安宣傳", ("國家安全", "国家安全", "愛國者治港", "爱国者治港")),
+        ("叱咤樂壇宣傳", ("叱咤樂壇", "戚冊學談", "戚測樂壇", "刺殺樂壇", "七七樂壇", "謝茜嘉", "謝西家", "梁文禮", "Woody")),
+        ("港鐵台呼", ("港鐵接軌", "港铁接軌", "貫通地上地下", "贯通地上地下", "關心你生活的每一程")),
+        ("電台聖誕卡宣傳", ("GilikGilikEX", "朱利朱利EX", "聖誕禮貌卡", "圣诞礼贸卡", "聖誕禮物卡", "九龍廣播道3號", "九龙广播道3号", "薛俊寧", "薛俊宁")),
+        ("報時台呼", ("這一秒 新一秒", "这一秒 新一秒", "即7903")),
     ]
     strong_brand_groups = {
         "飛鷹活絡油", "大館音樂節", "存款保障", "寶礦力", "黑痛藥片", "貴如美萬寧",
-        "國安宣傳", "流感疫苗", "昂坪360", "有誰共鳴", "OCBC銀行", "AIA投保", "煤氣MiaCucina", "一田購物"
+        "國安宣傳", "流感疫苗", "昂坪360", "有誰共鳴", "OCBC銀行", "AIA投保", "煤氣MiaCucina", "一田購物",
+        "電台聖誕卡宣傳", "叱咤樂壇宣傳", "港鐵台呼"
     }
 
     def _find_dense_ad_cluster(segs_slice):
@@ -1426,7 +1575,7 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                 if any((v in s_txt) or (v.lower() in s_lower) for v in variants):
                     matched_points.append((s_from, s_to, canon_name))
         for t_anchor, _, _ in matched_points:
-            win_pts = [(ts, te, w) for ts, te, w in matched_points if t_anchor <= ts <= t_anchor + 60.0]
+            win_pts = [(ts, te, w) for ts, te, w in matched_points if t_anchor <= ts <= t_anchor + 90.0]
             uniq_groups = {w for _, _, w in win_pts}
             uniq_times = {ts for ts, _, _ in win_pts}
             is_dense = (len(uniq_groups) >= 3 and len(uniq_times) >= 2) or (
@@ -1949,9 +2098,9 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
      * 【極度嚴格警告：嚴禁跨越 11:00 整點新聞！】Part 2 的終點【絕對不可能超過 3250s】！11:00 整點新聞報道、天氣、交通與商業廣告（長達 7~9 分鐘）必須完全切除！即使 11:00 前後正在進行同一個單元遊戲，11:00 前的內容屬於 Part 2，11:00 新聞與廣告後接回的內容必須作為 Part 3！【絕不可將 11:00 整點新聞包含在正片中】！
    - 【Part 3（第二小時上半段，11:00 - 11:30，可拆為 3a/3b）】：
      * 起點：【極度重要】11:00 整點新聞、天氣、交通及隨後的商業特約廣告結束後，第二小時正式單元專屬 Jingle（如週三【今日手機碌多咗】「最後一個post... 最後一條reels...」、週二【衰佬CLS】「森仔 咩啊...」、週四【粒粒皆辛苦】或嘉賓專訪 Jingle）起拍響起的瞬間（通常落在 3650s~3750s 左右）！
-     * 終點：【極度重要】若中途有 1 分鐘短廣告，拆分為 3a 與 3b，後半段話題必須聊到 11:30 半點報時與商業廣告開始前（約 4800s~5050s 左右）！絕不可在 11:15 說完一個話題就提早將整個 Part 3 截斷！
+     * 終點：【極度重要】若 11:15~11:25 中途有 1~2 分鐘短廣告或其他電台節目宣傳片（例如《GilikGilikEX 聖誕禮貌卡》寄往九龍廣播道3號、演唱會廣告等），【必須切除並拆分為 3a 與 3b】，切勿將其他節目的宣傳片對話誤認成聽眾連線！Part 3（或 3b）必須聊到真正的 11:30 半點報時與商業廣告大破口開始前（約 4950s~5060s 左右），且【絕對不可跨越 11:30 半點報時、天氣預測、《叱咤樂壇》宣傳片、萬寧等商業廣告大破口】！
    - 【Part 4（第二小時下半段，11:30 - 12:00）】：
-     * 起點：【極度重要】半點廣告破口通常包含《此時此刻 有誰共鳴》（公益團體呼籲如捐款支持某協會）等商業/公益宣傳，【全部屬於廣告破口，必須完全切除】！Part 4 起點必須精確落在單元專屬 Jingle（如 Everyday is 新day、雞仔好人、衰佬CLS 等）起拍響起的瞬間，【絕不可延遲切入，也絕不可將前面的有誰共鳴公益聲帶保留進來】！
+     * 起點：【極度重要】11:30 半點廣告大破口通常長達 5~8 分鐘（包含 11:30 報時、天氣預測、《叱咤樂壇》/其他節目宣傳片、商業廣告與《此時此刻 有誰共鳴》公益聲帶），【全部屬於廣告破口，必須完全切除】！Part 4 的起點通常在 5300s~5580s 之間（絕對不可能早於 5200s！），必須精確落在單元專屬 Jingle（如 Everyday is 新day、雞仔好人、衰佬CLS 等）起拍響起的瞬間！
      * 終點：【極度重要】節目最後主持人道別後，若有播放片尾曲，【片尾曲必須完整保留】直到 12:00 整點新聞報道開始前（通常在 6800s~6840s）！後續播出的商業廣告及整點新聞，【全部屬於破口，切除在新聞報時前一瞬間】！"""
 
         json_format_example = """{{
