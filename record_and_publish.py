@@ -445,7 +445,8 @@ def git_commit_and_push(rss_file, show_name, date_str):
         push_res = subprocess.run(["git", "-C", SCRIPT_DIR, "push", "origin", "main"], capture_output=True, text=True)
         if push_res.returncode != 0:
             print(f"[{datetime.now()}] Push 失敗，嘗試 pull --rebase 後重試...")
-            subprocess.run(["git", "-C", SCRIPT_DIR, "pull", "--rebase", "-X", "ours", "origin", "main"], check=True)
+            # 注意：git rebase 期間 ours 是遠端 upstream (GitHub Actions 未剪原版)，theirs 才是本地新提交之純淨版！
+            subprocess.run(["git", "-C", SCRIPT_DIR, "pull", "--rebase", "-X", "theirs", "origin", "main"], check=True)
             subprocess.run(["git", "-C", SCRIPT_DIR, "push", "origin", "main"], check=True)
 
         print(f"[{datetime.now()}] 成功推送到 GitHub！Podcast 訂閱源已即時更新。")
