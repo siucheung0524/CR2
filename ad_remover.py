@@ -92,17 +92,21 @@ STATION_PROMOS = [
     "Be Before Bed Time", "be before bed time", "不准睡先", "鄧小巧", "拾回自己的空間",
     "美味開餐", "美食嘉年華", "香港美食嘉年華",
     "知芬衣", "知婚姨", "朱芬", "知多知那麼多", "知多知咁多", "Centerminia", "善男信女", "鍾雪瑩", "楊偉倫",
-    "星矮粒", "聖艾粒", "下午五至七", "啦啦星之中八拍", "黃先生想你點", "點話點好",
+    "星矮粒下午五至七", "下午五至七", "啦啦星之中八拍", "黃先生想你點", "黄先生想你点", "黃先生黃先生", "黄先生黄先生", "點話點好", "点话点好",
     "先生小姐", "先生,小姐", "拖匪", "手工杏仁", "拖匪翠翠",
     "心跳行星", "八五二零", "即上各大音乐平台", "这一秒 新一秒",
     "重塑經典", "重数经典", "從數經典", "从数经典", "錄音全程就在目前", "录音全程就在目前",
+    "目前灌路", "目前觀露", "目前观露", "Taste the Atmosphere", "Singer Under My Skin",
     "HHM的浪漫", "黑喉黑面", "买一重老死", "買一重老死",
     "Always be with you", "周六快樂時代", "周六快乐时代", "Listen to Eason", "Listen to Eastern",
-    "Lesson to Ethan", "與我常在", "与我常在", "叱咤樂壇", "戚冊學談", "戚測樂壇", "刺殺樂壇", "七七樂壇",
+    "Lesson to Ethan", "與我常在", "与我常在", "叱咤樂壇", "戚冊學談", "戚冊學壇", "戚餐學壇", "戚測樂壇", "刺殺樂壇", "七七樂壇",
     "專業推介", "专业推介", "新上榜", "Oscar失眠藥", "Oscar 失眠藥", "一路漂浮", "一路飘放",
     "咆哮山莊", "爬敲山莊", "Music Break", "廣東歌關注組", "路人甲團火",
     "GilikGilikEX", "朱利朱利EX", "聖誕禮貌卡", "圣诞礼贸卡", "聖誕禮物卡", "交換聖誕禮貌卡", "交换圣诞礼贸卡",
-    "九龍廣播道3號", "九龙广播道3号", "薛俊寧", "薛俊宁", "青山樂壇", "謝茜嘉", "謝西家", "梁文禮", "Woody"
+    "九龍廣播道3號", "九龙广播道3号", "薛俊寧", "薛俊宁", "青山樂壇", "謝茜嘉", "謝西家", "梁文禮", "Woody",
+    "IDG Sunday", "陪你周日狂熱", "陪你周日狂言", "Sunday is your everyday Sunday", "1, 2, 3, 4, 5, 6, 1", "1,2,3,4,5,6,1", "何時才到星期日", "何时才到星期日",
+    "東亞丈夫", "东亚丈夫", "湯駿業", "汤俊叶", "王牌出場", "吳港波", "吴港波",
+    "Nobody can break you", "永遲半踢水分", "永迟半滴水花", "永迟半踢水分", "想給你最好", "想及你最好", "想給你最好忍遲變成"
 ]
 
 # 6. 商業特約廣告詞庫
@@ -135,8 +139,14 @@ AD_KEYWORDS = [
     "OCBC", "華僑銀行", "华翘银行", "財富管理", "财富管理", "成就理想", "追寻理想", "追尋理想", "可靠的伙伴", "可靠的夥伴", "用心帮", "用心幫", "梦想要落地", "夢想要落地", "创造更多这样的旅程",
     "飛鷹哥", "飞鷹哥", "飛鷹活絡油", "飛鷹活樂油", "飞鷹活樂遊", "活絡油", "活樂油", "活樂遊", "骨刺痛",
     "大館", "和言不同", "無界樂章", "Art May", "Art-mate", "存款保障", "存款守護者", "1831831",
-    "我年輕過", "我年轻过", "黑痛", "成人藥片", "寶礦力水特", "補礦力水特", "補礦力水達", "Iron Water",
-    "競賽牌照號碼", "竞赛牌照号码", "崇光感謝", "皇冠車展", "貴如美", "桂如美", "瞬間順滑", "國家安全", "国家安全", "愛國者治港", "爱国者治港"
+    "我年輕過", "我年轻过", "人人都年輕過", "人人都年轻过", "劉德華最新單曲", "刘德华最新单曲", "柳德華最新單曲", "柳德华最新单曲",
+    "黑痛", "成人藥片", "寶礦力水特", "補礦力水特", "補礦力水達", "Iron Water",
+    "競賽牌照號碼", "竞赛牌照号码", "崇光感謝", "皇冠車展", "貴如美", "桂如美", "歸如美", "瞬間順滑", "國家安全", "国家安全", "愛國者治港", "爱国者治港",
+    "港鐵商場", "港铁商场", "MTR MOBA", "MTR Mobile", "電子優惠券", "电子优惠券", "聖誕好禮", "圣诞好礼",
+    "29616638", "coms-auth", "搭長榮航空", "搭长荣航空", "長榮航空", "长荣航空",
+    "平治陳列室", "平治年度升級", "平致年度升级", "越貴新", "越贵新", "月桂生", "Kaneki", "Dress up your hair",
+    "令每位觀眾變成搖滾巨星", "令每位观众变成摇滚巨星", "5 seconds of summer", "Excel Wonderland", "KKTX",
+    "大分評", "大分评", "本片兒童不宜", "本片儿童不宜", "打保齡球可以保重", "打保龄球可以保重", "髮再生給你", "发再生给你"
 ]
 
 # 7. 節目專屬 Jingle / 主持關鍵字（重點保護，絕不可切！）
@@ -154,9 +164,12 @@ PROGRAM_JINGLE_KEYWORDS = [
     "聖艾粒", "lalalala", "少爺占", "當奴", "艾粒",
     "邊個痴線", "邊個正常", "你改變唔到", "唯有自己啦啦啦啦", "啦啦啦啦",
     "Jacky", "jacky", "突擊測驗", "每日一問", "突擊貪業",
-    "美術學會", "有冇共鳴", "有冇共鳴?", "你Sing我都Sing", "你sing我sing",
-    "明星插班生", "明星導航員", "寶寶很苦",
-    "ILUB TV", "晚間劇場", "代課老師", "心水清大師", "心水清",
+    "美術學會", "有冇共鳴", "有冇共鳴?", "有沒有共鳴", "有没有共鸣", "你Sing我都Sing", "你sing我sing",
+    "明星插班生", "明星導航員", "寶寶很苦", "宝宝很苦", "寶寶好苦", "寶寶恨苦", "寶寶狠腐",
+    "寶寶很驚", "宝宝很惊", "寶寶好驚", "宝宝好惊", "寶保很驚", "上天下海", "三字經", "三次經", "你SING我都SING",
+    "OOTD", "ootd", "OH OTD", "OH...OTD", "OH....OTD", "Oh OTD",
+    "有勇氣是靠本事", "有勇氣,是靠本事", "有勇氣 時刻本事", "你一百通訊站", "Lay 100", "今晚趁著天空有聲", "今晚趁着天空有声",
+    "ILUB TV", "I Love TV", "晚間劇場", "晚间剧场", "代課老師", "心水清大師", "心水清", "開心水清大師", "开心水清大师",
     "豪子", "阿豪", "占爺", "當奴哥",
     "鼓仔", "聽眾的鼓仔", "分享聽眾", "收到的鼓仔", "你不懂,我懂", "你不懂我懂", "你不懂，我懂",
     "sing a lup", "la la la la", "去蛇王", "辣辣辣", "阿佔", "太陽都落山", "未睡得覺", "四個人甘丁爽", "辣辣青絲",
@@ -227,9 +240,10 @@ def run_whisper_transcription(wav_file, model_path=None, json_base_path=None, sh
         if show_code == "ilub":
             whisper_prompt = (
                 "商業電台 叱咤903 聖艾粒LaLaLaLa 少爺占 當奴 Jacky 豪子 "
-                "邊個痴線 邊個正常 唯有自己啦啦啦啦 Jacky突擊測驗 美術學會 有冇共鳴 "
-                "你Sing我都Sing 明星插班生 明星導航員 寶寶很苦 ILUB TV 晚間劇場 心水清大師 "
-                "黃埔天地 AI豪子 聽眾鼓仔 有誰共鳴 新聞報道 馬路的事 交通消息 天氣預測"
+                "邊個痴線 邊個正常 唯有自己啦啦啦啦 Jacky突擊測驗 OH OTD OOTD 有勇氣是靠本事 "
+                "黃埔天地 AI豪子 聽眾鼓仔 有冇共鳴 你SING我都SING 明星導航員 "
+                "寶寶很苦 寶寶很驚 上天下海三字經 ILUB TV 晚間劇場 你一百通訊站 "
+                "今晚趁著天空有聲 心水清大師 有誰共鳴 新聞報道 馬路的事 交通消息 天氣預測"
             )
         else:
             whisper_prompt = (
@@ -774,9 +788,15 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     p1_break_keywords = ["五點半", "5點半", "17點半", "17時半", "大作", "突擊", "測驗", "廣告"] if is_ilub else ["Halloween", "萬聖節", "大過佬", "十點半", "10點半", "10時半", "得獎", "WhatsApp", "廣告"]
     p4_news_keywords = ["新聞報道", "新聞報導", "報道新聞", "報導新聞", "商業電台新聞", "七點", "7點", "十九點", "19點", "行政長官", "特區政府"] if is_ilub else ["新聞報道", "新聞報導", "報道新聞", "報導新聞", "商業電台新聞", "十二點", "12點", "行政長官", "特區政府"]
     gap_host_keywords = [
-        "少爺占", "當奴", "阿占", "艾粒", "豪子", "AI豪子", "AI 豪子", "ai豪子", "ai 豪子", "我是AI",
-        "Jacky", "jacky", "突擊測驗", "突擊貪業", "每日一問", "鼓仔", "黃埔", "sing a lup", "lalala",
-        "有冇共鳴", "沒有共鳴", "寶寶很苦", "明星插班生", "明星導航員", "晚間劇場", "心水清", "你sing", "你Sing",
+        "少爺占", "當奴", "阿占", "艾粒", "聖艾粒", "星矮粒", "星崖粒", "星藝粒", "星雅粒", "聖雷粒",
+        "豪子", "AI豪子", "AI 豪子", "ai豪子", "ai 豪子", "我是AI",
+        "Jacky", "jacky", "突擊測驗", "突擊貪業", "突擊抄業", "每日一問", "鼓仔", "黃埔", "sing a lup", "lalala",
+        "有冇共鳴", "沒有共鳴", "有沒有共鳴", "有没有共鸣",
+        "寶寶很苦", "宝宝很苦", "寶寶好苦", "寶寶恨苦", "寶寶狠腐",
+        "寶寶很驚", "宝宝很惊", "寶寶好驚", "宝宝好惊", "寶保很驚", "OOTD", "OH OTD", "OH...OTD", "OH....OTD",
+        "明星插班生", "明星導航員", "晚間劇場", "晚间剧场", "I Love TV", "ILUB TV",
+        "心水清", "開心水清", "开心水清", "你sing", "你Sing", "你SING", "上天下海", "三字經", "三次經",
+        "有勇氣是靠本事", "有勇氣,是靠本事", "有勇氣 時刻本事", "你一百通訊站", "Lay 100", "今晚趁著天空有聲", "今晚趁着天空有声",
         "邊個痴線", "唯有自己", "啦啦啦啦"
     ] if is_ilub else [
         "Bad Girl", "大過佬", "森美", "阿正", "Elsie", "妹頭", "吹水未夠班", "手機碌多咗", "十句講曬",
@@ -786,29 +806,45 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     ]
     gap_news_keywords = ["18點", "18:30", "19點", "六點", "七點", "5時半", "五點半", "六點半"] if is_ilub else ["11點", "11:30", "12點", "10時半", "十點半", "十一點半"]
 
+    cross_show_promos = [
+        "Bad Girl", "bad girl", "大過佬", "大過老", "大过老", "重做壞句子", "重做坏句子",
+        "早上10時至12時", "早上十至十二", "早上10至12"
+    ] if is_ilub else [
+        "聖艾粒", "星矮粒", "下午五至七", "下午5至7", "啦啦星之中八拍"
+    ]
+
     promo_block_markers = [
         "在晴朗的一天", "再晴郎的一天", "再晴朗的一天", "林海峰", "主子主場館", "度假小島", "雙人套房",
         "903FORSTAR", "All-Star", "籃球賽", "男童賽", "古天樂", "古天駱", "歌星勇士隊", "世界航空",
         "跳島遊", "跳渡游", "有誰共鳴", "有谁共鸣", "此時此刻", "此时此刻", "50881903", "50-881-903",
         "專業推介", "专业推介", "新上榜", "三甲歌", "三甲位置", "冠軍作品", "冠军作品", "Good morning",
-        "晚上九至十", "同你流汗", "體育資訊", "心跳行星", "八五二零", "這一秒 新一秒", "这一秒 新一秒",
+        "晚上九至十", "晚上十至十一", "同你流汗", "體育資訊", "心跳行星", "八五二零", "這一秒 新一秒", "这一秒 新一秒",
         "GilikGilikEX", "朱利朱利EX", "聖誕禮貌卡", "圣诞礼贸卡", "聖誕禮物卡", "交換聖誕禮貌卡", "交换圣诞礼贸卡",
         "九龍廣播道3號", "九龙广播道3号", "薛俊寧", "薛俊宁", "青山樂壇", "謝茜嘉", "謝西家", "梁文禮", "Woody",
-        "晚上11至12", "晚上十一至十二", "下午十二至二", "下周十二至二"
-    ]
+        "晚上11至12", "晚上十一至十二", "下午十二至二", "下周十二至二",
+        "黃先生想你點", "黄先生想你点", "黃先生黃先生", "黄先生黄先生", "點話點好", "点话点好", "髮再生給你", "发再生给你",
+        "東亞丈夫", "东亚丈夫", "湯駿業", "汤俊叶", "王牌出場", "吳港波", "吴港波",
+        "IDG Sunday", "陪你周日狂熱", "陪你周日狂言", "何時才到星期日", "何时才到星期日",
+        "戚餐學壇", "戚冊學壇", "賜7903", "赐7903", "刺7903"
+    ] + cross_show_promos
     outro_ad_markers = [
         "喜療駝", "藥膏", "痛腳", "雙人套房", "小中瓶", "精華水", "綠色殯葬", "綠色笨藏",
-        "食環署", "食環柱", "本篇兒童不宜", "本片兒童不宜", "本片青少年", "我爹想旅行", "我爹上旅行",
+        "食環署", "食環柱", "本篇兒童不宜", "本片兒童不宜", "本片儿童不宜", "本片青少年", "我爹想旅行", "我爹上旅行",
         "全城一致讚好", "和爹一起去旅行", "和爹去旅行", "狂賀連續七日", "狂賀連續七天", "飄放冠軍", "票房冠軍", "心安情", "Glip",
         "先生,小姐", "先生小姐", "幾分鐘而已", "拖匪", "手工杏仁", "拖匪翠翠", "知婚姨", "現在姚堅", "姚堅", "報導新聞", "報道新聞",
-        "一田購物", "Mia Cucina", "Mia Katrina", "名氣家", "煤氣煮食爐", "The Club", "現在搖堅", "现在摇坚", "摇坚报道"
+        "一田購物", "Mia Cucina", "Mia Katrina", "名氣家", "煤氣煮食爐", "The Club", "現在搖堅", "现在摇坚", "摇坚报道",
+        "郭書洋", "郭书洋", "陳世文", "陈世文", "黃牌美", "黄牌美", "大分評", "大分评",
+        "Nobody can break you", "永遲半踢水分", "永迟半滴水花", "永迟半踢水分", "想給你最好", "想及你最好", "天天實在", "天天实在",
+        "人人都年輕過", "人人都年轻过", "劉德華最新單曲", "刘德华最新单曲", "柳德華最新單曲", "柳德华最新单曲", "我年輕過", "我年轻过",
+        "黃先生想你點", "黄先生想你点", "黃先生黃先生", "黄先生黄先生", "髮再生給你", "发再生给你"
     ]
     shared_ad_extras = [
         "天氣預測", "天氣預算", "天气预测", "天气预算", "流感", "皇家加勒比", "十方法師", "萬寧", "護髮", "打針", "防流感",
-        "青衣城", "清衣城", "國際歌迷會", "各大音樂平台", "各大音乐平台", "輸血服務中心", "紅十字會", "通訊局", "coms-auth",
+        "青衣城", "清衣城", "國際歌迷會", "各大音樂平台", "各大音乐平台", "輸血服務中心", "紅十字會", "通訊局", "coms-auth", "29616638",
         "選舉委員會", "选举委员会", "选举管理委员会", "香港賽馬會", "香港赛马会", "香港蔡賣會", "香港蔡卖会",
         "昂坪360", "昂坪 360", "全景畫", "全景画", "水晶纜車", "水晶缆车", "心跳行星", "八五二零",
-        "i'm loving it", "double版燒雞腿包", "這支U87", "这支U87", "2027年2月20", "甚麼事 這是這個菜", "这是这个菜"
+        "i'm loving it", "double版燒雞腿包", "這支U87", "这支U87", "2027年2月20", "甚麼事 這是這個菜", "这是这个菜",
+        "港鐵商場", "港铁商场", "MTR MOBA", "MTR Mobile", "電子優惠券", "电子优惠券", "聖誕好禮", "圣诞好礼"
     ]
     gap_stop_words = set(
         AD_KEYWORDS + TRAFFIC_KEYWORDS + WEATHER_KEYWORDS + NEWS_START_KEYWORDS +
@@ -816,14 +852,21 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     )
 
     core_host_jingle_cues = [
-        k.lower() for k in (gap_host_keywords + [
-            "bad girl", "baggirl", "大過佬", "大過老", "大过老", "來大笑代替上路", "elsie", "elsi", "alsie",
-            "最後一個pose", "最後一個姿勢", "最後一條reels", "最後一條reals", "街仔好人", "雞仔好人", "衰佬",
-            "粒粒皆辛苦", "三個農夫", "everyday is", "吹水未夠班", "十句講曬", "手機碌多咗", "大明星殺手",
-            "有人掛住你", "聖艾粒", "少爺占", "當奴", "lalalala", "唯有自己", "邊個痴線", "突擊測驗",
-            "美術學會", "有冇共鳴", "你sing", "明星插班生", "明星導航員", "寶寶很苦", "ilub tv", "晚間劇場",
-            "心水清", "黃埔", "豪子", "jacky"
-        ])
+        k.lower() for k in (gap_host_keywords + (
+            [
+                "聖艾粒", "星矮粒", "星崖粒", "星藝粒", "星雅粒", "聖雷粒", "少爺占", "當奴", "lalalala",
+                "唯有自己", "邊個痴線", "突擊測驗", "美術學會", "有冇共鳴", "有沒有共鳴", "有没有共鸣",
+                "你sing", "明星插班生", "明星導航員", "寶寶很苦", "宝宝很苦", "寶寶好苦", "寶寶恨苦", "寶寶狠腐",
+                "寶寶很驚", "宝宝很惊", "寶寶好驚", "宝宝好惊", "寶保很驚", "ootd", "oh otd", "oh...otd", "oh....otd", "OOTD", "OH OTD", "OH...OTD", "OH....OTD",
+                "ilub tv", "i love tv", "晚間劇場", "晚间剧场", "心水清", "開心水清", "开心水清",
+                "黃埔", "豪子", "jacky", "上天下海", "三字經", "三次經", "有勇氣", "你一百通訊站", "lay 100"
+            ] if is_ilub else [
+                "bad girl", "baggirl", "大過佬", "大過老", "大过老", "來大笑代替上路", "elsie", "elsi", "alsie",
+                "最後一個pose", "最後一個姿勢", "最後一條reels", "最後一條reals", "街仔好人", "雞仔好人", "衰佬",
+                "衰老", "customer love service", "粒粒皆辛苦", "三個農夫", "everyday is",
+                "吹水未夠班", "十句講曬", "手機碌多咗", "大明星殺手", "有人掛住你"
+            ]
+        ))
     ]
 
     def _seg_times(seg):
@@ -861,47 +904,73 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
 
     # -------------------------------------------------------------
     # 檢查項 0.1：段落結尾防誤吞廣告/宣傳回縮 (Boundary Tail Ad Pullback)
-    # 若某正片段落結尾最後 45 秒內已進入廣告、節目宣傳、報時，自動回縮至廣告開始前
-    # （防誤殺：純報時必須整句為報時語，且若回縮點後仍有 >= 3 句或 >= 10s 連續非廣告主持對話則視為口語閒聊不回縮）
+    # 若某正片段落結尾最後 75 秒內已進入廣告、節目宣傳、報時或新聞導語，自動回縮至廣告開始前
+    # （防誤殺：純報時必須整句為報時語，且若回縮點後仍有 >= 3 句連續非廣告主持對話則視為口語閒聊不回縮）
     # -------------------------------------------------------------
     pure_time_re = re.compile(
         r'^(?:現在|现在|依家|而家|時間|时间|時間來到|时间来到)?\s*'
         r'(?:10|11|12|5|6|7|17|18|19|十|十一|十二|五|六|七)'
         r'(?:[:：](?:00|30)|(?:點|点|時|时)(?:半|整|正)?)[。，,!\s]*$'
     )
+    strong_tail_ad_cues = [
+        "Nobody can break you", "永遲半踢水分", "永迟半滴水花", "永迟半踢水分", "想給你最好", "想及你最好", "天天實在", "天天实在",
+        "人人都年輕過", "人人都年轻过", "劉德華最新單曲", "刘德华最新单曲", "柳德華最新單曲", "柳德华最新单曲", "我年輕過", "我年轻过",
+        "黃先生想你點", "黄先生想你点", "黃先生黃先生", "黄先生黄先生", "髮再生", "发再生",
+        "目前灌路", "目前灌錄", "目前觀露", "目前观露", "重塑經典", "重塑经典", "重數經典", "重数经典", "從數經典",
+        "錄音全程就在目前", "录音全程就在目前", "Taste the Atmosphere", "Singer Under My Skin",
+        "賜7903", "赐7903", "刺7903", "新一秒",
+        "令每位觀眾變成搖滾巨星", "令每位观众变成摇滚巨星", "1, 2, 3, 4, 5, 6, 1", "1,2,3,4,5,6,1", "IDG Sunday",
+        "搭長榮航空", "搭长荣航空", "郭書洋", "郭书洋", "陳世文", "陈世文", "報道新聞", "报道新聞", "报道新闻", "新聞報道", "新闻报道"
+    ]
     for k in healed_keeps:
         k_st = float(k["start"])
         k_et = float(k["end"])
         earliest_tail_ad = None
         earliest_ad_text = ""
-        tail_window = max(k_st, k_et - 45.0)
+        earliest_is_strong = False
+        tail_window = max(k_st, k_et - 75.0)
 
         tail_segs = [
             s for s in transcript_segments
-            if tail_window <= _seg_times(s)[0] < k_et
+            if tail_window <= _seg_times(s)[0] <= k_et + 0.3
         ]
 
         non_ad_after_count = 0
         for s in tail_segs:
             s_from, s_to = _seg_times(s)
             s_txt = s.get("text", "").strip()
+            # 僅針對剛好落在結尾交界的新聞導語提前回縮 0.5s，避免擦進主播開聲
+            if s_from >= k_et - 0.05:
+                if _has_kw(s_txt, ["報道新聞", "报道新闻", "報導新聞", "报导新闻", "郭書洋", "郭书洋", "陳世文", "陈世文", "姚堅", "葉俊庭"]):
+                    if earliest_tail_ad is None:
+                        earliest_tail_ad = max(k_st, k_et - 0.8)
+                        earliest_ad_text = s_txt
+                        earliest_is_strong = True
+                continue
             is_pure_time = bool(pure_time_re.match(s_txt)) and not _has_kw(s_txt, gap_host_keywords)
-            is_ad_seg = _has_kw(s_txt, tail_ad_stop_words) or is_pure_time
+            is_strong_ad = _has_kw(s_txt, strong_tail_ad_cues) or is_pure_time
+            is_ad_seg = is_strong_ad or _has_kw(s_txt, tail_ad_stop_words)
             if is_ad_seg:
                 if earliest_tail_ad is None:
                     earliest_tail_ad = s_from
                     earliest_ad_text = s_txt
+                    earliest_is_strong = is_strong_ad
+                elif is_strong_ad:
+                    earliest_is_strong = True
                 non_ad_after_count = 0
             else:
-                if _has_kw(s_txt, gap_host_keywords + PROGRAM_JINGLE_KEYWORDS):
+                if _has_kw(s_txt, core_host_jingle_cues):
                     earliest_tail_ad = None
                     earliest_ad_text = ""
+                    earliest_is_strong = False
                     non_ad_after_count = 0
                 elif earliest_tail_ad is not None and not any(p in s_txt for p in HALLUCINATION_PATTERNS) and len(s_txt) >= 2:
                     non_ad_after_count += 1
-                    if non_ad_after_count >= 3:
+                    reset_threshold = 5 if earliest_is_strong else 3
+                    if non_ad_after_count >= reset_threshold and (k_et - earliest_tail_ad >= 20.0 or not earliest_is_strong):
                         earliest_tail_ad = None
                         earliest_ad_text = ""
+                        earliest_is_strong = False
                         non_ad_after_count = 0
 
         if earliest_tail_ad is not None and (k_et - earliest_tail_ad >= 0.5):
@@ -949,7 +1018,7 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                     non_ad_speech_count += 1
                     if non_ad_speech_count >= 5:
                         stop_regular_ad_scan = True
-        if latest_head_ad_end is not None and (latest_head_ad_end - k_st >= 1.5):
+        if latest_head_ad_end is not None and (latest_head_ad_end - k_st >= 1.0):
             # 若宣傳片尾聲緊接 10 秒內出現單元 Jingle，精準對齊至 Jingle 起拍點
             aligned_end = latest_head_ad_end
             for s in transcript_segments:
@@ -963,7 +1032,7 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
 
     # -------------------------------------------------------------
     # 檢查項 0.3：破口內電台宣傳片孤島自動剔除 (Isolated Promo Island Removal)
-    # 若兩個大破口之間夾著極短（<= 135s）且無本節目主持/單元 Jingle 之孤島段落（如 11:30 報時後的 75s 叱咤樂壇新歌宣傳），自動剔除！
+    # 若兩個大破口之間夾著短區間（<= 165s）且無本節目主持/單元 Jingle 之孤島段落（如跨節目宣傳片 Bad Girl 大過佬、叱咤樂壇宣傳），自動剔除！
     # -------------------------------------------------------------
     if len(healed_keeps) >= 4:
         healed_keeps.sort(key=lambda x: float(x["start"]))
@@ -972,7 +1041,14 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
             "叱咤樂壇", "戚冊學談", "戚測樂壇", "刺殺樂壇", "七七樂壇", "woodie",
             "專業推介", "专业推介", "新上榜", "music break", "咆哮山莊", "爬敲山莊",
             "oscar", "失眠藥", "失眠药", "有誰共鳴", "有谁共鸣", "這一秒", "这一秒", "新一秒"
-        ] + HALF_HOUR_KEYWORDS + TIME_ANNOUNCEMENT_KEYWORDS
+        ] + HALF_HOUR_KEYWORDS + TIME_ANNOUNCEMENT_KEYWORDS + cross_show_promos
+        strong_island_inner_cues = list(cross_show_promos) + [
+            "叱咤樂壇", "戚冊學談", "戚測樂壇", "專業推介", "专业推介",
+            "有誰共鳴", "有谁共鸣", "50881903", "GilikGilikEX", "朱利朱利EX", "聖誕禮貌卡",
+            "黃先生想你點", "黄先生想你点", "IDG Sunday", "東亞丈夫", "心跳行星", "八五二零",
+            "Nobody can break you", "永遲半踢水分", "永迟半踢水分", "天天實在", "天天实在",
+            "港鐵商場", "港铁商场", "通訊局", "coms-auth", "29616638", "本片兒童不宜", "本篇兒童不宜"
+        ]
         for idx_k in range(1, len(healed_keeps) - 1):
             cur_k = healed_keeps[idx_k]
             c_st = float(cur_k["start"])
@@ -980,12 +1056,19 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
             c_dur = c_et - c_st
             prev_et = float(filtered_islands[-1]["end"])
             next_st = float(healed_keeps[idx_k + 1]["start"])
-            if c_dur <= 135.0 and (c_st - prev_et >= 60.0) and (next_st - c_et >= 90.0):
+            if c_dur <= 165.0 and (c_st - prev_et >= 35.0) and (next_st - c_et >= 60.0):
                 inner_segs = [s for s in transcript_segments if c_st <= _seg_times(s)[0] < c_et]
                 ctx_segs = [s for s in transcript_segments if (c_st - 18.0) <= _seg_times(s)[0] <= (c_et + 18.0)]
                 has_core_host = any(_has_kw(s.get("text", ""), core_host_jingle_cues) for s in inner_segs)
                 has_promo_ctx = any(_has_kw(s.get("text", ""), island_promo_cues + list(tail_ad_stop_words)) for s in ctx_segs)
-                if not has_core_host and has_promo_ctx:
+                has_strong_inner_promo = any(_has_kw(s.get("text", ""), strong_island_inner_cues) for s in inner_segs)
+                inner_ad_hits = sum(
+                    1 for s in inner_segs
+                    if _has_kw(s.get("text", ""), island_promo_cues + list(tail_ad_stop_words))
+                )
+                is_classic_island = (c_dur <= 135.0 and (c_st - prev_et >= 60.0) and (next_st - c_et >= 90.0) and has_promo_ctx)
+                is_strong_promo_island = (has_strong_inner_promo or inner_ad_hits >= 3)
+                if not has_core_host and (is_classic_island or is_strong_promo_island):
                     healed_items.append(
                         f"破口宣傳孤島剔除：移除夾在破口中間之電台宣傳/非正片短區間 {c_st:.1f}s~{c_et:.1f}s (時長: {c_dur:.1f}s)"
                     )
@@ -1144,28 +1227,35 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
     # 檢查項 2：時鐘錨點自癒與保護 (Clock Structure & Music Anchors)
     # -------------------------------------------------------------
     if is_2hr_show and healed_keeps:
-        # 2.1 Part 1 開頭主題曲前奏防延遲切入
+        # 2.1 Part 1 開頭主題曲前奏防延遲切入與開播前幻覺廣告剔除
         p1 = healed_keeps[0]
         p1_start = float(p1["start"])
         intro_jingle_cues = [
-            "聖艾粒", "星崖粒", "星矮粒", "星藝粒", "啦啦啦啦", "一早起床", "公海二",
-            "太陽都落山", "太陽都降山", "長毛Jackie", "长毛Jackie", "開牙齒", "开牙齿"
+            "聖艾粒", "星崖粒", "星矮粒", "星藝粒", "星雅粒", "聖雷粒", "啦啦啦啦", "一早起床", "公海二",
+            "太陽都落山", "太阳都落山", "太陽都降山", "太陽都浪山", "太阳都浪山",
+            "長毛Jackie", "长毛Jackie", "長毛Jacky", "长毛Jacky", "開牙齒", "开牙齿",
+            "講壞事", "讲坏事", "壞事下午", "坏事下午", "舌頭都流冰", "舌头都流冰",
+            "講壞話隨便", "讲坏话随便", "感覺奔放", "感觉奔放", "沙腥老好健壮", "寫字樓好緊張", "收工了有空",
+            "未睡得久", "未睡得覺", "未睡得觉", "啦啦聲之中", "啦啦声之中", "四個人甘丁爽"
         ] if is_ilub else [
             "bad girl", "badgirl", "baggirl", "大過佬", "大過老", "大过老", "帶過老", "大过路", "大過路", "來大笑代替上路", "代替上路",
             "完美阿正", "笑爆嘴", "elsie", "elsi", "alsie", "借首歌", "借宿法", "借宿白",
             "每日晨光", "每日晨運", "每日晨混", "扮六尺", "扮六呎"
         ]
-        # 尋找 0~350s 內開播前最後一則新聞/交通/天氣/公益宣傳/商業廣告的結束點與最早主題曲起點
+        # 尋找開播前最後一則新聞/交通/天氣/公益宣傳/商業廣告的結束點與最早主題曲起點（聖艾粒播前廣告常至 380s）
+        intro_scan_limit = 430.0 if is_ilub else 350.0
         last_pre_show_ad_end = 25.0
         earliest_cue_time = None
         for seg in transcript_segments:
             s_from, s_to = _seg_times(seg)
             s_text = seg.get("text", "")
             s_lower = s_text.lower()
-            if s_from <= 350.0:
-                if any(k in s_lower for k in intro_jingle_cues) or any(k in s_text for k in intro_jingle_cues):
+            if s_from <= intro_scan_limit:
+                is_intro_cue = any(k in s_lower for k in intro_jingle_cues) or any(k in s_text for k in intro_jingle_cues)
+                if is_intro_cue:
                     if earliest_cue_time is None:
                         earliest_cue_time = s_from
+                    continue
                 if (earliest_cue_time is None or s_from <= earliest_cue_time):
                     if _has_kw(s_text, gap_stop_words) or any(w in s_text for w in ["王牌出場", "深夜一至二", "直播室跟大家再見面"]):
                         last_pre_show_ad_end = max(last_pre_show_ad_end, s_to)
@@ -1274,11 +1364,17 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
             k_et = float(k["end"])
             if k_st < 3250.0 and k_et > 3480.0:
                 news_break_keywords = ["新聞報道", "新聞報導", "商業電台新聞", "即測903", "叱咤903 新聞", "11點", "18點", "十一點", "十八點", "報告新聞"]
-                h2_start_jingles = [
-                    "今日手機碌多咗", "手機弄多", "手機碌多", "最後一個post", "最後一條reels", "最後一個",
-                    "大明星殺手", "衰佬", "衰佬cls", "粒粒皆辛苦", "你知道唔知道有人掛住你", "來大笑代替上路",
-                    "bad girl", "大過佬", "每日一問", "突擊測驗", "突擊貪業", "有冇共鳴", "寶寶很苦", "明星插班生", "晚間劇場"
-                ]
+                h2_start_jingles = (
+                    [
+                        "聖艾粒", "星矮粒", "星崖粒", "少爺占", "當奴", "lalalala",
+                        "有冇共鳴", "有沒有共鳴", "你sing", "明星導航員", "明星插班生",
+                        "寶寶很苦", "寶寶很驚", "寶寶好驚", "上天下海", "三字經", "晚間劇場"
+                    ] if is_ilub else [
+                        "今日手機碌多咗", "手機弄多", "手機碌多", "最後一個post", "最後一條reels", "最後一個",
+                        "大明星殺手", "衰佬", "衰佬cls", "粒粒皆辛苦", "你知道唔知道有人掛住你", "來大笑代替上路",
+                        "bad girl", "大過佬"
+                    ]
+                )
                 found_news_st = None
                 for s in transcript_segments:
                     st_sec = s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)
@@ -1290,16 +1386,18 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                 if found_news_st is None:
                     found_news_st = 3205.2
 
+                h2_scan_lo = 3850.0 if is_ilub else 3500.0
+                h2_scan_hi = 4250.0 if is_ilub else 3900.0
                 found_h2_st = None
                 for s in transcript_segments:
                     st_sec = s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)
                     txt = s.get("text", "")
-                    if 3500.0 <= st_sec <= 3900.0:
+                    if h2_scan_lo <= st_sec <= h2_scan_hi:
                         if any(w in txt.lower() for w in h2_start_jingles):
                             found_h2_st = st_sec
                             break
                 if found_h2_st is None:
-                    found_h2_st = 3720.1
+                    found_h2_st = 4000.0 if is_ilub else 3720.1
 
                 healed_items.append(
                     f"整點新聞破口自癒拆分：區間異常跨越整點新聞破口（{k_st:.1f}s~{k_et:.1f}s），"
@@ -1359,15 +1457,17 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                     if is_ad:
                         break_hits.append((sf, st_, is_strong, stxt))
 
-                strong_in_core = [x for x in break_hits if 4940.0 <= x[0] <= 5380.0 and x[2]]
+                hb_core_hi = 5420.0 if is_ilub else 5380.0
+                hb_start_hi = 5340.0 if is_ilub else 5220.0
+                strong_in_core = [x for x in break_hits if 4940.0 <= x[0] <= hb_core_hi and x[2]]
                 if len(break_hits) >= 3 and len(strong_in_core) >= 2:
-                    # 尋找半點破口起點：取 4920s~5220s 間第一個強破口點（且之後到 5220s 無主持 Jingle 恢復）
+                    # 尋找半點破口起點：取 4920s~hb_start_hi 間第一個強破口點（且之後無主持 Jingle 恢復）
                     found_hb_st = None
                     for sf, st_, is_strong, _ in break_hits:
-                        if 4920.0 <= sf <= 5220.0 and is_strong:
+                        if 4920.0 <= sf <= hb_start_hi and is_strong:
                             has_host_soon = any(
                                 _has_kw(s.get("text", ""), core_host_jingle_cues)
-                                for s in span_segs if sf < _seg_times(s)[0] <= min(sf + 120.0, 5220.0)
+                                for s in span_segs if sf < _seg_times(s)[0] <= min(sf + 120.0, hb_start_hi)
                             )
                             if not has_host_soon:
                                 found_hb_st = sf
@@ -1440,7 +1540,8 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
 
         # 2.4 Part 3 結束點檢驗 (11:30 或 18:30 半點前單元遊戲)
         h2_crossing = [k for k in healed_keeps if float(k["start"]) < 4950.0 and float(k["end"]) > 5420.0]
-        h2_first_keeps = [k for k in healed_keeps if 3400.0 <= float(k["start"]) < 5200.0 and float(k["end"]) <= 5350.0]
+        h2_first_end_max = 5420.0 if is_ilub else 5350.0
+        h2_first_keeps = [k for k in healed_keeps if 3400.0 <= float(k["start"]) < 5200.0 and float(k["end"]) <= h2_first_end_max]
         if h2_crossing:
             checks["part3_continuity"] = f"FAIL (單一段落橫跨 {half_break_label} 半點大破口: {h2_crossing[0]['start']}s~{h2_crossing[0]['end']}s)"
             failure_reasons.append(f"單一段落橫跨 {half_break_label} 半點廣告破口")
@@ -1459,24 +1560,38 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         last_end = float(p_last["end"])
         new_last_end = last_end
 
-        # 防誤吞片尾廣告：若 last_end 落在片尾廣告中，自動回縮至廣告開始前
+        # 防誤吞片尾廣告與整點新聞：若 last_end 落在片尾廣告/宣傳/新聞導語中，自動回縮至廣告開始前
         outro_ad_words = [
             "想你陪我錄音", "想你陪我录音", "mcdonald", "recording sessions",
-            "本篇兒童不宜", "本篇青少年", "12點", "12点", "19點", "19点", "十二點", "十九點",
+            "本篇兒童不宜", "本片兒童不宜", "本片儿童不宜", "本篇青少年",
+            "12點", "12点", "19點", "19点", "十二點", "十九點",
             "新聞報道", "新聞報導", "報導新聞", "報道新聞", "商業電台新聞", "現在由", "姚堅",
+            "郭書洋", "郭书洋", "陳世文", "陈世文", "黃牌美", "黄牌美",
             "先生,小姐", "先生小姐", "幾分鐘而已", "知婚姨", "知芬衣", "朱芬", "拖匪", "手工杏仁",
-            "全城一致讚好", "和爹一起去旅行", "和爹去旅行", "票房冠軍", "心安情", "Glip"
+            "全城一致讚好", "和爹一起去旅行", "和爹去旅行", "票房冠軍", "心安情", "glip",
+            "黃先生黃先生", "黄先生黄先生", "黃先生想你點", "黄先生想你点", "點話點好", "点话点好",
+            "髮再生", "发再生", "nobody can break you", "永遲半踢水分", "永迟半踢水分", "永迟半滴水花",
+            "想給你最好", "想及你最好", "天天實在", "天天实在",
+            "人人都年輕過", "人人都年轻过", "劉德華最新單曲", "刘德华最新单曲", "柳德華最新單曲", "柳德华最新单曲",
+            "我年輕過", "我年轻过", "大分評", "大分评", "有誰共鳴", "有谁共鸣", "50881903",
+            "coms-auth", "29616638", "這一秒 新一秒", "这一秒 新一秒"
         ]
         for s in transcript_segments:
             st_sec = s.get("offsets", {}).get("from", 0)/1000.0 if "offsets" in s else s.get("start", 0.0)
             txt = s.get("text", "")
-            if 6600.0 <= st_sec <= last_end:
-                if any(w in txt.lower() for w in outro_ad_words):
-                    if st_sec < last_end - 1.0:
-                        healed_items.append(f"Part 4 結尾由 {last_end:.1f}s 提早回縮至 {st_sec:.1f}s (切除片尾宣傳/十二點新聞前廣告: {txt[:20]})")
+            if 6550.0 <= st_sec <= last_end + 0.3:
+                if _has_kw(txt, outro_ad_words):
+                    if st_sec < last_end - 0.5:
+                        healed_items.append(f"Part 4 結尾由 {last_end:.1f}s 提早回縮至 {st_sec:.1f}s (切除片尾宣傳/整點新聞前廣告: {txt[:20]})")
                         p_last["end"] = round(st_sec, 2)
                         last_end = float(p_last["end"])
                         new_last_end = last_end
+                    elif st_sec >= last_end - 0.5:
+                        pulled = round(max(6550.0, st_sec - 0.8), 2)
+                        healed_items.append(f"Part 4 結尾由 {last_end:.1f}s 微調回縮至 {pulled:.1f}s (避開整點新聞起拍重疊: {txt[:20]})")
+                        p_last["end"] = pulled
+                        last_end = pulled
+                        new_last_end = pulled
                     break
 
         if last_end < 6600.0:
@@ -1518,13 +1633,14 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
 
     # -------------------------------------------------------------
     # 檢查項 2.6：段中高密度短廣告自癒拆分 (Mid-Segment Short Ad Cluster Excision)
-    # 若單段超過 500 秒之正片中途夾雜 20~120 秒商業短廣告（>=3 個明確廣告詞條集中於 60s 內且其間無主持/Jingle線索），自動切除並拆為 a/b 兩段
+    # 若單段超過 500 秒之正片中途夾雜 15~180 秒商業短廣告（如 18:45 心水清大師前短破口），自動切除並拆為 a/b 兩段
     # -------------------------------------------------------------
     news_bulletin_anchors = [
         "商業電台新聞", "商业电台新闻", "現在由葉俊庭", "现在由叶俊庭", "葉俊庭報道新聞", "叶俊庭报道新闻",
         "北陀新聞", "北陀新闻", "這節新聞報道完", "這一節新聞報道完", "這節新聞報導完", "這節新聞播出完",
         "這節新聞播完", "这一节新闻报道完", "这节新闻报道完", "这节新闻报导完", "这节新闻播出完", "这节新闻播完",
-        "現在姚堅報道新聞", "现在摇坚报道新闻", "姚堅報道新聞", "摇坚报道新闻"
+        "現在姚堅報道新聞", "现在摇坚报道新闻", "姚堅報道新聞", "摇坚报道新闻",
+        "郭書洋", "郭书洋", "陳世文", "陈世文", "黃牌美", "黄牌美", "現在由郭", "现在由郭", "現在由陳", "现在由陈"
     ]
     strict_ad_marker_groups = [
         ("流感疫苗", ("流感疫苗", "流感針", "流感针", "季節性流感", "季节性流感")),
@@ -1541,12 +1657,13 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         ("煤氣MiaCucina", ("Mia Cucina", "Mia Katrina", "名氣家", "煤氣煮食爐")),
         ("AIA投保", ("AIA",)),
         ("網上/獨立投保", ("網上投保", "网上投保", "獨立投保", "独立投保")),
-        ("新歌宣傳", ("全新單曲", "全新单曲", "最新單曲", "最新单曲", "各大音樂平台", "各大音乐平台", "我年輕過", "我年轻过")),
+        ("新歌宣傳", ("全新單曲", "全新单曲", "最新單曲", "最新单曲", "各大音樂平台", "各大音乐平台", "我年輕過", "我年轻过", "人人都年輕過", "人人都年轻过")),
         ("OCBC銀行", ("OCBC", "華僑銀行", "华翘银行")),
         ("財富管理", ("財富管理", "财富管理")),
         ("成就理想", ("成就每一個理想", "成就每一个理想", "成就理想初心")),
         ("用心幫有心人", ("用心幫", "用心帮")),
         ("EasonU87", ("這支U87", "这支U87", "2027年2月20", "Recording Sessions", "演藝學院歌劇院")),
+        ("陳奕迅廣告", ("目前灌路", "目前灌錄", "Taste the Atmosphere", "Singer Under My Skin")),
         ("飛鷹活絡油", ("飛鷹哥", "飞鷹哥", "飛鷹活絡油", "飛鷹活樂油", "飞鷹活樂遊", "活絡油", "活樂油", "活樂遊", "骨刺痛")),
         ("大館音樂節", ("大館", "和言不同", "無界樂章", "Art May", "Art-mate")),
         ("存款保障", ("存款保障", "存款守護者", "1831831")),
@@ -1556,13 +1673,25 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         ("國安宣傳", ("國家安全", "国家安全", "愛國者治港", "爱国者治港")),
         ("叱咤樂壇宣傳", ("叱咤樂壇", "戚冊學談", "戚測樂壇", "刺殺樂壇", "七七樂壇", "謝茜嘉", "謝西家", "梁文禮", "Woody")),
         ("港鐵台呼", ("港鐵接軌", "港铁接軌", "貫通地上地下", "贯通地上地下", "關心你生活的每一程")),
+        ("港鐵商場", ("港鐵商場", "港铁商场", "MTR MOBA", "MTR Mobile", "電子優惠券", "电子优惠券", "聖誕好禮", "圣诞好礼")),
+        ("通訊局", ("通訊局", "通讯局", "coms-auth", "29616638")),
+        ("天天實在廣告", ("Nobody can break you", "永遲半踢水分", "永迟半踢水分", "永迟半滴水花", "想給你最好", "想及你最好", "天天實在", "天天实在")),
+        ("5SOS演唱會", ("5 seconds of summer", "令每位觀眾變成搖滾巨星", "Excel Wonderland", "KKTX")),
+        ("黃先生想你點", ("黃先生想你點", "黄先生想你点", "黃先生黃先生", "黄先生黄先生", "髮再生給你", "发再生给你", "髮再生", "发再生")),
+        ("IDG Sunday", ("IDG Sunday", "陪你周日狂熱", "陪你周日狂言", "何時才到星期日", "何时才到星期日")),
+        ("平治/長榮/越貴新", ("平治陳列室", "平治年度升級", "搭長榮航空", "長榮航空", "越貴新", "月桂生", "Dress up your hair")),
         ("電台聖誕卡宣傳", ("GilikGilikEX", "朱利朱利EX", "聖誕禮貌卡", "圣诞礼贸卡", "聖誕禮物卡", "九龍廣播道3號", "九龙广播道3号", "薛俊寧", "薛俊宁")),
         ("報時台呼", ("這一秒 新一秒", "这一秒 新一秒", "即7903")),
     ]
+    if is_ilub:
+        strict_ad_marker_groups.append(
+            ("跨節目宣傳", ("Bad Girl", "大過佬", "大過老", "大过老", "重做壞句子", "重做坏句子", "早上10時至12時"))
+        )
     strong_brand_groups = {
         "飛鷹活絡油", "大館音樂節", "存款保障", "寶礦力", "黑痛藥片", "貴如美萬寧",
         "國安宣傳", "流感疫苗", "昂坪360", "有誰共鳴", "OCBC銀行", "AIA投保", "煤氣MiaCucina", "一田購物",
-        "電台聖誕卡宣傳", "叱咤樂壇宣傳", "港鐵台呼"
+        "電台聖誕卡宣傳", "叱咤樂壇宣傳", "港鐵台呼",
+        "港鐵商場", "通訊局", "天天實在廣告", "陳奕迅廣告", "5SOS演唱會", "黃先生想你點", "IDG Sunday", "平治/長榮/越貴新", "跨節目宣傳"
     }
 
     def _find_dense_ad_cluster(segs_slice):
@@ -1605,7 +1734,7 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                     sf, st_ = _seg_times(s)
                     if sf >= c_st:
                         continue
-                    if c_st - st_ > 8.0 or _has_kw(s.get("text", ""), core_host_jingle_cues):
+                    if c_st - st_ > 12.0 or _has_kw(s.get("text", ""), core_host_jingle_cues):
                         break
                     if _has_kw(s.get("text", ""), tail_ad_stop_words):
                         c_st = sf
@@ -1615,13 +1744,13 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
                     sf, st_ = _seg_times(s)
                     if sf < c_et:
                         continue
-                    if sf - c_et > 8.0 or _has_kw(s.get("text", ""), core_host_jingle_cues):
+                    if sf - c_et > 12.0 or _has_kw(s.get("text", ""), core_host_jingle_cues):
                         break
                     if _has_kw(s.get("text", ""), tail_ad_stop_words):
                         c_et = st_
                     else:
                         break
-                if (c_st - k_st >= 120.0) and (k_et - c_et >= 90.0) and (15.0 <= c_et - c_st <= 120.0):
+                if (c_st - k_st >= 120.0) and (k_et - c_et >= 90.0) and (15.0 <= c_et - c_st <= 180.0):
                     healed_items.append(
                         f"段中短廣告自癒拆分：於 {c_st:.1f}s~{c_et:.1f}s 自動切除中途廣告破口 "
                         f"({c_et-c_st:.1f}s, 命中: {', '.join(c_words[:3])})"
@@ -1798,10 +1927,12 @@ def audit_boundaries_with_gemini(raw_keeps, transcript_segments, show_code="bgog
     boundaries_block = "\n".join(boundary_sections)
 
     if show_code == "ilub":
-        show_specific_instructions = """- 《聖艾粒LaLaLaLa》（少爺占、當奴、Jacky、豪子）：
-  * 開場：開場前電台台呼/天氣/商業廣告以及前續節目宣傳結束，少爺占與當奴開場主題曲前奏音樂響起或兩人開場說話之處（約 100s~300s，切勿因前奏為純音樂而延遲切入！）。
-  * 尖峰交通消息：17:00~19:00 是下班尖峰，商台常有「馬路的事 交通消息」，交通消息聲帶可切除，但切口必須精確，絕不可誤殺主持人討論交通的笑話！
-  * 結尾：節目道別後的【片尾流行歌曲】必須完整連貫保留直至 19:00 整點新聞報道開始前！後續播出的商業廣告及整點新聞，【切除在 19:00 新聞報時前一瞬間】！"""
+        show_specific_instructions = """- 《聖艾粒LaLaLaLa》（少爺占、當奴、Jacky、豪子，17:00 - 19:00）：
+  * 開場（約 300s~390s）：開播前常有長達 5~6.5 分鐘的前續節目收尾、天氣、台呼與商業廣告，必須完全切除！起點須精準落在《聖艾粒LaLaLaLa》開場主題曲起拍或占奴正式開口處（切勿誤吞播前廣告，亦切勿因前奏為音樂而太遲切入）。
+  * 17:30 與 18:30 破口（下班尖峰）：商台於 17:30 及 18:30（有時延至 18:35）頻繁插播「馬路的事 交通消息」、大量商業廣告與跨節目宣傳片——特別注意：《Bad Girl 大過佬》（森美/阿正/Elsie 早上 10-12 宣傳片）、《心跳行星 八五二零》、《王牌出場》、《東亞丈夫學》、《IDG Sunday》、《叱咤樂壇》新歌宣傳、英文廣告歌（「Nobody can break you anymore / 永遲半踢水分 / 天天實在」）、劉德華《我年輕過》、陳奕迅演唱會廣告、5SOS 演唱會、長榮航空、平治車展，【全部屬於廣告/宣傳，必須 100% 切除】，切勿誤判為占奴單元！
+  * 18:00 整點大破口：長達 13~17 分鐘（約 3150s~4050s），含整點新聞、天氣、交通消息與商業廣告，嚴禁跨越或保留中間孤島！
+  * 18:45【心水清大師】前短破口：約 6250s~6450s 常夾雜 1~2.5 分鐘商業廣告（如通訊局、港鐵商場、有誰共鳴），若出現必須拆為 Part 4a 與 Part 4b 切除！
+  * 18:54~19:00 節目結尾【極度重要】：主持人道別（或最後一首節目流行歌播完）後，19:00 新聞前幾乎必定會播 30~120 秒商業廣告與電台宣傳（常見：《黃先生想你點》髮再生宣傳、劉德華《我年輕過》新歌廣告、英文廣告歌「Nobody can break you / 永遲半踢水分 / 天天實在」、電影《大分評 / 本片兒童不宜》、報時台呼），隨後即進入 19:00 新聞（郭書洋／陳世文／黃牌美報道新聞）。【以上 18:54~19:00 之廣告、宣傳片與整點新聞必須全部完全切除】，終點應精準停在主持人道別完畢或最後一首正片流行歌結束的瞬間！"""
     else:
         show_specific_instructions = """- 《Bad Girl 大過佬》（森美、阿正、Elsie）：
   * 開場：開場前的商業廣告（如麥當勞、綠色殯葬、加德士汽油等）必須完全切除，起點必須落在開場主題曲前奏音樂或主持開場打招呼瞬間。
@@ -2000,60 +2131,74 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
         show_info = f"""{weekday_hint}目標節目：《聖艾粒LaLaLaLa》（叱咤903，主持：少爺占、當奴、Jacky、豪子）
 【播出時間】：星期一至五 下午 17:00 - 19:00（黃昏 17:00 開播，18:00 六點整點新聞，19:00 七點節目結束）
 
-【節目每週固定環節日程表（17:00 - 19:00）】：
+【節目每週固定環節日程表（17:00 - 19:00，2026 最新真實版）】：
 ◆ 第一小時（17:00 - 18:00）環節：
-  - 【開場清談（17:00 - 17:30）】：少爺占與當奴開場閒聊、生活瑣事互寸、近期旅遊或日常爆笑經歷，中途會播放 1~2 首流行歌。
-  - 【17:30 半點單元】：
-    * 【Jacky 突擊測驗 / 每日一問】：監製 Jacky 或豪子每天準備一道趣味問答題考少爺占與當奴（開場聲帶常有「Jacky 突擊測驗」）。
-    * 【搞邊科】：介紹潮流時尚事物、流行文化。
+  - 【開場清談（17:00 - 17:30）】：少爺占與當奴開場主題曲（「聖艾粒啦啦啦啦 / 太陽都落山 / 講壞事 / 四個人甘丁爽」）後閒聊、生活瑣事互寸、日常爆笑經歷，中途會播放 1~2 首流行歌。
+  - 【17:30 - 18:00 半點單元】：
     * 【五點半 Jingle】：「邊個痴線 邊個正常 你改變唔到佢哋 唯有自己啦啦啦啦...」
-    * 主持人接續話題閒聊與流行歌曲播放，連貫主持直到 18:00 六點鐘新聞前！
+    * 【Jacky 突擊測驗 / 每日一問】：大部分日子 17:30 均由監製 Jacky（或豪子）準備趣味問答題考少爺占與當奴（開場聲帶常有「Jacky 突擊測驗」）。
+    * 【OH....OTD】（OOTD）：有時候 17:30 會進行潮流穿搭主題單元。
+    * 【寶寶很驚】：有時候亦會在 17:30 時段播出聽眾驚嚇趣事分享！
+    * 【有勇氣，是靠本事】：約 5 分鐘新晉歌手/藝人專訪（結尾常有「聖艾粒啦啦啦啦，有勇氣，是靠本事」聲帶，【100% 節目正片，切勿誤當廣告】！）。
+    * 【黃埔天地 AI 豪子】及【聽眾鼓仔】：占奴與 AI 豪子的爆笑互動、聽眾投稿分享（常在第一小時下半段出現，【100% 節目正片，絕非商場廣告】！）。
+    * 主持人接續話題與流行歌曲播放，連貫至 18:00 六點鐘新聞前（約 3060s~3220s）！
 
 ◆ 第二小時（18:00 - 19:00）環節：
-  - 【18:00 - 18:30 每日主題單元】（六點新聞與交通消息結束後）：
-    * 星期一【美術學會 / 拍片】：主持人出題並進行創意繪畫或短片拍攝比賽。
-    * 星期二【有冇共鳴】：主持人拋出生活怪癖、尷尬經驗或觀察，互相爭辯「有冇共鳴？」。
-    * 星期三【你Sing我都Sing】：少爺占與當奴唱歌詞、猜歌名遊戲，與 Facebook 聽眾直播互動。
-    * 星期四【明星插班生 / 明星導航員】：邀請歌手、藝人或運動員嘉賓專訪。
-    * 星期五【寶寶很苦】：聽眾電話與心聲分享，主持人爆笑開解安慰。
+  - 【18:00 - 18:30 每日固定主題單元】（六點新聞、天氣與下班交通消息結束後，通常在 3950s~4120s 開始）：
+    * 星期一【有冇共鳴】：主持人拋出生活怪癖、尷尬經驗或觀察，互相爭辯「有冇共鳴？」。
+    * 星期二【你SING我都SING!】：少爺占與當奴唱歌詞、猜歌名互動遊戲。
+    * 星期三【明星導航員】：邀請歌手、藝人或嘉賓專訪及開車導航互動。
+    * 星期四【寶寶很苦】（有時亦會有【寶寶很驚】）：聽眾電話與心聲/趣事分享，主持人爆笑開解安慰。
+    * 星期五【上天下海三字經】：主持人大玩三字經文字接龍與創意創作挑戰。
+    * （注意：此節正片與最後一首流行歌有時會延續至 18:35 / 約 5320s 才入半點交通廣告！）
   - 【18:30 - 19:00 下半場單元】（18:30 交通消息與廣告結束後）：
     * 【ILUB TV 晚間劇場 / 廣播劇】：占奴經典廣播劇與角色扮演惡搞。
-    * 【心水清大師】/【代課老師】。
-    * 【黃埔天地 AI 豪子】及【聽眾鼓仔】：占奴與 AI 豪子的爆笑互動、聽眾投稿分享，【100% 屬於節目正片，絕對嚴禁誤殺】！
-    * 主持人道別（如「聽日見、拜拜、聽日五點再見」）及之後播放的【片尾流行歌曲】，必須完整保留直到 19:00 整點新聞報時前！
+    * 【你一百通訊站 / Lay 100】、【今晚趁著天空有聲】、每日主單元後半段。
+    * 【18:45 短廣告破口（約 6250s~6450s）】：在【心水清大師】開講前，商台經常插播一段 1~2.5 分鐘的商業廣告或《有誰共鳴》公益短破口（如通訊局、港鐵商場等），此時【必須將 Part 4 拆為 Part 4a 與 Part 4b】，切淨中間短破口！
+    * 【心水清大師 / 開心水清大師】／【代課老師】及主持人結尾道別（約 6400s~6760s）。
 
 【節目專屬 Jingle 聲帶】：
-- 「聖艾粒」、「lalalala」、「sing a lup」、「你不懂我懂」、「四個人甘丁爽」
+- 「聖艾粒」、「lalalala」、「sing a lup」、「你不懂我懂」、「四個人甘丁爽」、「太陽都落山」
 - 「邊個痴線 邊個正常 你改變唔到佢哋 唯有自己啦啦啦啦」（五點半 Jingle）
-- 「Jacky 突擊測驗」（或突擊貪業）
-- 「ILUB TV 晚間劇場」、「心水清大師」
+- 「Jacky 突擊測驗」（或突擊貪業）、「OH....OTD」、「有勇氣，是靠本事」
+- 「有冇共鳴」、「你SING我都SING」、「明星導航員」、「寶寶很苦」、「寶寶很驚」、「上天下海三字經」
+- 「ILUB TV 晚間劇場」、「你一百通訊站」、「今晚趁著天空有聲」、「心水清大師 / 開心水清大師」
 
-【極度重要防誤殺原則】：
-1. 尖峰時段交通消息處理：傍晚 17:00~19:00 是香港下班尖峰時間，商台會頻繁播放「馬路的事 交通消息」。交通消息聲帶本身可切除，但切口必須精確！【絕對不可將前後主持人的話題對話、開場閒聊、或拿交通消息開玩笑的言論當成廣告切除】！
-2. 「黃埔 AI 豪子」與「聽眾鼓仔」：這是占奴正片固定環節，絕不是商場廣告，必須 100% 完整保留！
-3. 主持人隨口笑談的商業品牌、贊助或電台活動屬於節目對話，切勿截斷！
-4. 節目結尾道別後的【片尾歌曲】必須完整保留直至 19:00 整點新聞前！"""
+【極度重要：傍晚時段常見廣告與跨節目宣傳片陷阱（必須 100% 切除！）】：
+1. 【跨節目電台宣傳片（嚴禁誤認作本節目內容！）】：
+   - 《Bad Girl 大過佬》宣傳片（森美/阿正/Elsie「重做壞句子」、早上 10 時至 12 時宣傳片）——常在 17:30 破口出現，【這不是聖艾粒正片，必須完全切除】！
+   - 《在晴朗的一天出發》、《心跳行星 八五二零》、《王牌出場》、《東亞丈夫學》（湯駿業）、《IDG Sunday》（何時才到星期日）、《黃先生想你點》（髮再生）、《叱咤樂壇》新歌宣傳、《有誰共鳴》（50881903）。
+2. 【傍晚洗腦商業廣告與廣告歌（必須 100% 切除！）】：
+   - 英文廣告歌（「Nobody can break you anymore / 永遲半踢水分 / 想給你最好 / 天天實在」）
+   - 劉德華《我年輕過》新歌宣傳（「人人都年輕過 / 劉德華最新單曲」）
+   - 陳奕迅演唱會/專輯廣告（「目前灌錄 / Taste the Atmosphere / Singer Under My Skin」）
+   - 5SOS 演唱會（「5 seconds of summer / 令每位觀眾變成搖滾巨星」）、電影《大分評 / 本片兒童不宜》
+   - 港鐵商場 / MTR Mobile、通訊局 coms-auth / 29616638、長榮航空、平治車展、越貴新、貴如美萬寧。
+3. 【尖峰交通消息處理】：17:00~19:00 是下班尖峰，商台常播「馬路的事 交通消息」，交通消息聲帶必須切除，但絕不可誤殺前後主持人的對話或笑話！
+4. 【防誤殺原則】：「黃埔天地 AI 豪子」、「聽眾鼓仔」、「有勇氣，是靠本事」皆為占奴正片，絕非廣告，必須 100% 完整保留！
+5. 【18:54~19:00 結尾切除原則】：主持人道別或最後一首節目歌曲結束後，19:00 新聞前幾乎每次都有 30~120 秒廣告/宣傳片（《黃先生想你點》、劉德華《我年輕過》、天天實在廣告歌、電影廣告、報時台呼）及 19:00 整點新聞（郭書洋／陳世文／黃牌美），【必須全部完全切除，絕不可留到新聞開頭】！"""
 
-        part_rules = """2. 【四個段落（Parts 1~4）的起止點判定規範（《聖艾粒LaLaLaLa》17:00 - 19:00）】：
+        part_rules = """2. 【段落（Parts 1~4a/4b）的起止點判定規範（《聖艾粒LaLaLaLa》17:00 - 19:00）】：
    - 【Part 1（第一小時上半段，17:00 - 17:30）】：
-     * 起點：開播前電台台呼/天氣/商業廣告以及前續節目宣傳結束，少爺占與當奴開場主題曲前奏音樂響起或兩人開場說話之處（約 100s~300s，切勿因前奏為純音樂而延遲切入！）。
-     * 終點：17:30（五點半）商業廣告與報時開始前（通常落在 1300s~1500s / 21~25 分鐘左右）。【絕對不可在話題剛說完就提前切斷】！若主持人在話題後播了一首流行歌並繼續說話再入廣告，歌曲與對話必須完整連貫保留！
+     * 起點：開播前電台台呼/天氣/商業廣告以及前續節目宣傳結束，少爺占與當奴開場主題曲前奏音樂響起或兩人開場說話之處（聖艾粒播前廣告較長，起點通常落在 300s~390s，切勿誤吞播前廣告，亦切勿因前奏為音樂而延遲切入！）。
+     * 終點：17:30（五點半）商業廣告與報時開始前（通常落在 1280s~1450s 左右）。【絕對不可在話題剛說完就提前切斷】！若主持人在話題後播了一首流行歌並繼續說話再入廣告，歌曲與對話必須完整連貫保留；但歌曲結束後一進入商業廣告/新歌宣傳（如劉德華《我年輕過》）或報時即刻停止！
    - 【Part 2（第一小時下半段，17:30 - 18:00，可拆為 2a/2b）】：
-     * 起點：半點廣告/交通消息結束後，主持人說話、「邊個痴線... 唯有自己啦啦啦啦」Jingle 或「Jacky 突擊測驗」接回之處（約 1700s 左右）。
-     * 終點：【極度重要】主持人在整點前結束話題的時間各集皆不同。若中途有 1 分鐘短廣告，拆分為 2a 與 2b，後半段話題必須聊到 18:00（六點鐘）整點新聞報時前（約 3200s 左右）！只有當主持人明確結束話題進入 18:00 新聞報時，才是 Part 2 終點！
+     * 起點：半點廣告/交通消息與跨節目宣傳片（切勿誤留《Bad Girl 大過佬》宣傳片！）結束後，「邊個痴線... 唯有自己啦啦啦啦」Jingle、「Jacky 突擊測驗」、「OH....OTD」、「寶寶很驚」或主持人正式說話接回之處（約 1650s~1850s）。
+     * 終點：後半段話題（含【有勇氣，是靠本事】、【黃埔天地 AI 豪子】等）一直連貫到 18:00（六點鐘）整點前廣告/宣傳（如《IDG Sunday》、報時）與新聞開始前（通常落在 3060s~3220s）！若中途有短廣告則拆為 2a/2b，切淨廣告！
    - 【Part 3（第二小時上半段，18:00 - 18:30，可拆為 3a/3b）】：
-     * 起點：【極度重要】18:00 六點新聞報道與交通消息結束後，單元專屬 Jingle（如週一【美術學會】、週二【有冇共鳴】、週三【你Sing我都Sing】、週四【明星插班生】、週五【寶寶很苦】）響起之處！
-     * 終點：【極度重要】若中途有 1 分鐘短廣告，拆分為 3a 與 3b，後半段話題必須聊到 18:30 半點報時「六點半」廣告前（約 5000s 左右）！絕不可提早將整個 Part 3 截斷！
-   - 【Part 4（第二小時下半段，18:30 - 19:00）】：
-     * 起點：【極度重要】18:30 交通消息與廣告結束後，單元專屬 Jingle（如 ILUB TV 晚間劇場、心水清大師、黃埔 AI 豪子、聽眾鼓仔）起拍響起的瞬間！
-     * 終點：【極度重要】節目最後主持人道別後，若有播放片尾曲，【片尾曲必須完整保留】直到 19:00 七點鐘整點新聞報道開始前（通常在 6800s 左右）！後續播出的商業廣告及整點新聞，【切除在 19:00 新聞報時前一瞬間】！"""
+     * 起點：18:00 六點新聞報道、天氣與下班交通消息全部結束後（通常在 3950s~4120s），每日單元專屬 Jingle（週一【有冇共鳴】、週二【你SING我都SING!】、週三【明星導航員】、週四【寶寶很苦 / 寶寶很驚】、週五【上天下海三字經】）響起或主持正式開講之處！切勿吞入開頭的《叱咤樂壇》宣傳！
+     * 終點：連貫至 18:30（有時延至 18:35，約 4950s~5330s）「六點半」報時、交通消息或商業廣告（如陳奕迅、5SOS、長榮航空、天天實在廣告歌）開始前一瞬間！
+   - 【Part 4（第二小時下半段，18:30 - 19:00，常拆為 4a/4b）】：
+     * 起點：18:30 交通消息與商業廣告結束後，單元 Jingle（ILUB TV 晚間劇場、你一百通訊站、今晚趁著天空有聲、主單元後半段）或主持人正式開講之瞬間（約 5300s~5650s）。
+     * 18:45 中場短破口：若在約 6250s~6450s（【心水清大師】開講前）出現 1~2.5 分鐘商業廣告或《有誰共鳴》公益破口，【務必拆分為 Part 4a 與 Part 4b】，切除中間廣告並完整保留後半段【心水清大師】與結尾道別！
+     * 終點：【極度重要】主持人道別（如「聽日見、拜拜、聽日五點再見」）完畢，或道別後緊接的最後一首正片流行歌曲結束的瞬間（通常在 6650s~6780s）！隨後 18:54~19:00 的所有商業廣告、新歌廣告（劉德華《我年輕過》）、電台節目宣傳（《黃先生想你點》）、英文廣告歌（「Nobody can break you / 天天實在」）及 19:00 整點新聞（郭書洋／陳世文／黃牌美），【必須 100% 完全切除】！"""
 
         json_format_example = """{{
   "keep_intervals": [
-    {{"start": 0.0, "end": 0.0, "description": "Part 1: 開場主題曲起拍至 17:30 五點半報時與商業廣告交通前"}},
-    {{"start": 0.0, "end": 0.0, "description": "Part 2 (或 2a/2b): 17:30 半點破口後接回至 18:00 六點新聞前主持對話（若中途有短廣告請拆分切除，切勿丟棄後半段主持話題！）"}},
-    {{"start": 0.0, "end": 0.0, "description": "Part 3 (或 3a/3b): 18:00 六點新聞與交通後單元 Jingle 接回至 18:30 廣告前（若中途有短廣告請拆分切除，切勿丟棄後半段主持話題！）"}},
-    {{"start": 0.0, "end": 0.0, "description": "Part 4: 18:30 半點單元 Jingle 起拍至節目完結道別與片尾曲結束（切除 19:00 新聞）"}}
+    {{"start": 0.0, "end": 0.0, "description": "Part 1: 開場主題曲起拍至 17:30 五點半商業廣告與報時前"}},
+    {{"start": 0.0, "end": 0.0, "description": "Part 2 (或 2a/2b): 17:30 半點破口後接回至 18:00 六點前廣告與新聞前（完整保留突擊測驗/OH OTD/有勇氣是靠本事/AI豪子）"}},
+    {{"start": 0.0, "end": 0.0, "description": "Part 3 (或 3a/3b): 18:00 六點新聞與交通後每日單元 Jingle 接回至 18:30 交通廣告前"}},
+    {{"start": 0.0, "end": 0.0, "description": "Part 4 (或 4a/4b): 18:30 破口後接回至心水清大師與節目完結（若 18:45 有短廣告請拆為 4a/4b；18:54~19:00 所有廣告宣傳與新聞必須完全切除）"}}
   ]
 }}"""
 
@@ -2164,146 +2309,204 @@ def detect_ad_intervals_with_gemini(transcript_segments, total_duration, show_co
     last_error = None
     successful_model = None
     parsed = None
+    keep_intervals = []
+    cuts = []
+    report = None
     best_fallback = None  # (score, cand_model, cand_keeps, cand_cuts, cand_report)
 
-    for attempt in range(1, 3):
+    def _run_split_hour_mode(reason_banner):
+        nonlocal last_error, successful_model, keep_intervals, cuts, report, best_fallback, ctx
+        print(f"  🧩 [分時段雙半場精準模式] {reason_banner}")
+        h1_cutoff = 3450.0
+        h2_cutoff = 3550.0 if show_code == "ilub" else 3350.0
+        h2_filter_min = 3550.0 if show_code == "ilub" else 3400.0
+        h1_lines = [
+            f"[{int(t0//60):02d}:{int(t0%60):02d} ({t0:.1f}s -> {t1:.1f}s)] {txt}"
+            for t0, t1, txt in compact_entries if t0 <= h1_cutoff
+        ]
+        h2_lines = [
+            f"[{int(t0//60):02d}:{int(t0%60):02d} ({t0:.1f}s -> {t1:.1f}s)] {txt}"
+            for t0, t1, txt in compact_entries if t1 >= h2_cutoff
+        ]
+        if show_code == "ilub":
+            h1_focus = (
+                "請僅針對以下【第一小時（上半場 0s ~ 3450s，包含 Part 1 與 Part 2）】逐字稿，"
+                "專注精準定位：(1) 開場主題曲起拍點（切除 0s~380s 播前廣告）；(2) 17:30 五點半廣告破口（嚴禁誤留《Bad Girl 大過佬》等跨節目宣傳片與劉德華/天天實在廣告）；"
+                "(3) 18:00 整點前廣告/台呼與新聞開始前（通常 3060s~3220s，嚴禁吞入 18:00 前宣傳或新聞）。"
+                "請輸出 JSON：{\"keep_intervals\": [{\"start\": 0.0, \"end\": 0.0, \"description\": \"...\"}]}\n\n"
+            )
+            h2_focus = (
+                "請僅針對以下【第二小時（下半場 3550s ~ 結束，包含 Part 3 與 Part 4a/4b）】逐字稿，"
+                "專注精準定位：(1) 18:00 六點新聞與交通消息完全結束後之每日單元起拍點（通常 3950s~4120s，切除開頭《叱咤樂壇》宣傳）；"
+                "(2) 18:30（有時至 18:35）半點交通與商業廣告破口；(3) 約 18:45（6250s~6450s）心水清大師前若有 1~2.5 分鐘短廣告/公益破口請拆分為 Part 4a 與 Part 4b 切除；"
+                "(4) 節目道別或最後一首正片歌曲結束點（18:54~19:00 所有廣告宣傳如《黃先生想你點》、劉德華《我年輕過》、天天實在廣告歌、電影廣告及 19:00 新聞必須 100% 切除）。"
+                "請輸出 JSON：{\"keep_intervals\": [{\"start\": 0.0, \"end\": 0.0, \"description\": \"...\"}]}\n\n"
+            )
+        else:
+            h1_focus = (
+                "請僅針對以下【第一小時（上半場 0s ~ 3450s，包含 Part 1 與 Part 2）】逐字稿，"
+                "輸出整點新聞報時（約 3150s~3250s）之前的正片保留區間 JSON：{\"keep_intervals\": [{\"start\": 0.0, \"end\": 0.0, \"description\": \"...\"}]}\n\n"
+            )
+            h2_focus = (
+                "請僅針對以下【第二小時（下半場 3350s ~ 結束，包含 Part 3 與 Part 4）】逐字稿，"
+                "輸出整點新聞與交通廣告結束後（約 3650s~4150s 單元 Jingle 起拍）至節目完結片尾曲結束（12:00/19:00 新聞前）的正片保留區間 JSON："
+                "{\"keep_intervals\": [{\"start\": 0.0, \"end\": 0.0, \"description\": \"...\"}]}\n\n"
+            )
+        h1_prompt = f"你是一位專業的香港商台叱咤903廣播節目剪輯專家。\n{show_info}\n{part_rules}\n{h1_focus}" + "\n".join(h1_lines)
+        h2_prompt = f"你是一位專業的香港商台叱咤903廣播節目剪輯專家。\n{show_info}\n{part_rules}\n{h2_focus}" + "\n".join(h2_lines)
+        req_h1 = json.dumps({"contents": [{"parts": [{"text": h1_prompt}]}], "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}}).encode("utf-8")
+        req_h2 = json.dumps({"contents": [{"parts": [{"text": h2_prompt}]}], "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}}).encode("utf-8")
+
         for idx, cand_model in enumerate(model_queue):
             if "lite" in cand_model.lower():
-                print(f"  🛑 略過 Lite 模型 [{cand_model}]（系統嚴格禁用 Lite 模型以確保剪輯精確度）")
                 continue
-            round_str = f", 輪次 {attempt}/2" if attempt > 1 else ""
-
-            # 支援多組 API Keys 自動輪替容錯（遇 429、503、Timeout 等錯誤自動換 Key 重試）
             for k_idx, cur_key in enumerate(all_keys):
                 key_tag = f" (Key #{k_idx+1})" if len(all_keys) > 1 else ""
-                print(f"  🤖 嘗試調用 Gemini 模型 [{cand_model}]{key_tag} (順位 {idx+1}/{len(model_queue)}{round_str})...")
+                print(f"  🤖 [Split-Hour] 嘗試調用 Gemini 模型 [{cand_model}]{key_tag} (順位 {idx+1}/{len(model_queue)})...")
                 is_quality_rejection = False
                 try:
-                    parsed, ctx = _call_gemini_json(cand_model, cur_key, req_data, timeout=120, ctx=ctx)
-                    raw_keeps = _extract_gemini_intervals(parsed, "keep_intervals")
-                    if not raw_keeps:
-                        raise ValueError(f"模型 {cand_model} 未回傳有效的 keep_intervals")
+                    p1_json, ctx = _call_gemini_json(cand_model, cur_key, req_h1, timeout=90, ctx=ctx)
+                    p2_json, ctx = _call_gemini_json(cand_model, cur_key, req_h2, timeout=90, ctx=ctx)
+                    k1 = [x for x in _extract_gemini_intervals(p1_json, "keep_intervals") if float(x.get("end", 0)) <= h1_cutoff]
+                    k2 = [x for x in _extract_gemini_intervals(p2_json, "keep_intervals") if float(x.get("start", 0)) >= h2_filter_min]
+                    merged_raw = k1 + k2
+                    if len(merged_raw) < 4:
+                        raise ValueError(f"Split-Hour 回傳有效段落不足 ({len(k1)}+{len(k2)}={len(merged_raw)} < 4)")
 
-                    print(f"  🔍 [Pass 1 全局初劃完成] 成功識別出 {len(raw_keeps)} 個候選區間，啟動 [Pass 2 邊界顯微鏡深度覆核]...")
+                    print(f"  🔍 [Split-Hour Pass 1 完成] H1={len(k1)}段 + H2={len(k2)}段，啟動 [Pass 2 邊界顯微鏡深度覆核]...")
                     audited_keeps = audit_boundaries_with_gemini(
-                        raw_keeps=raw_keeps,
+                        raw_keeps=merged_raw,
                         transcript_segments=transcript_segments,
                         show_code=show_code,
                         api_key=cur_key,
                         model=cand_model,
                         total_duration=total_duration
                     )
-
-                    # 嚴格品質檢驗：調用品檢門禁進行自癒與多維度評分，若未通過或評分 < 80 嚴格禁止採用！
                     cand_passed, cand_keeps, cand_cuts, cand_report = inspect_and_verify_cut_quality(
                         audited_keeps, cuts=[], total_duration=total_duration,
                         transcript_segments=transcript_segments, show_code=show_code,
-                        engine_used=f"gemini ({cand_model} 2-Pass)"
+                        engine_used=f"gemini ({cand_model} split-hour 2-Pass)"
                     )
                     cand_score = cand_report.get("score", 0)
                     ad_check = cand_report.get("checks", {}).get("ad_contamination", "")
                     if "PASS" in ad_check and len(cand_keeps) >= 4:
                         if best_fallback is None or cand_score > best_fallback[0]:
-                            best_fallback = (cand_score, cand_model, cand_keeps, cand_cuts, cand_report)
+                            best_fallback = (cand_score, f"{cand_model}-split", cand_keeps, cand_cuts, cand_report)
 
                     if not cand_passed or cand_score < 80:
                         is_quality_rejection = True
                         reasons = cand_report.get("failure_reasons", [])
-                        raise ValueError(f"模型 {cand_model} 產出區間未達品質標準 (Score: {cand_score}/100, passed={cand_passed}, 失敗項: {reasons})")
+                        raise ValueError(f"Split-Hour 模型 {cand_model} 品檢未達標 (Score: {cand_score}/100, passed={cand_passed}, 失敗項: {reasons})")
 
-                    successful_model = cand_model
+                    successful_model = f"{cand_model}-split"
                     keep_intervals = cand_keeps
                     cuts = cand_cuts
                     report = cand_report
                     if cand_model in all_models_list:
                         model_idx = all_models_list.index(cand_model)
                         record_gemini_model_success(cand_model, model_idx)
-
-                    print(f"  ✨ 模型 [{cand_model}]{key_tag} 分析成功並通過品檢門禁 (評分: {cand_score}/100)！")
+                    print(f"  ✨ [分時段雙半場模式] 模型 [{cand_model}]{key_tag} 分析成功並通過品檢門禁 (評分: {cand_score}/100)！")
                     break
-
-                except Exception as e:
-                    last_error = e
+                except Exception as split_err:
+                    last_error = split_err
                     if not is_quality_rejection:
-                        record_gemini_model_error(cand_model, e)
+                        record_gemini_model_error(cand_model, split_err)
                     if k_idx + 1 < len(all_keys):
-                        print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 調用失敗或品檢未達標 ({e})，自動無縫切換至 Key #{k_idx+2} 重試...")
+                        print(f"  ⚠️ [Split-Hour] 模型 [{cand_model}]{key_tag} 失敗 ({split_err})，切換至 Key #{k_idx+2} 重試...")
                         continue
                     else:
-                        print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 所有 Key 調用均失敗或品檢未達標: {e}，自動嘗試下一個候選模型...")
+                        print(f"  ⚠️ [Split-Hour] 模型 [{cand_model}]{key_tag} 失敗: {split_err}，嘗試下一個候選模型...")
                         break
-
             if successful_model and keep_intervals and report:
                 break
-        if successful_model and keep_intervals and report:
-            break
-        if attempt < 2:
-            print("  ⏳ 第一輪所有候選模型調用遇到網絡或服務波動，等待 10 秒後啟動第二輪重試...")
-            time.sleep(10)
 
-    # 若單次 2 小時全篇請求因體積過大全部 Timeout/503，啟動【分上下半場雙請求模式 (Split-Hour Chunked AI Mode)】
-    if not successful_model or not keep_intervals or not report:
-        print("  🧩 [分時段雙半場精準模式] 啟動上下半場獨立短請求拆解（大幅縮減單次 Token 體積與防 Timeout）...")
-        h1_lines = [
-            f"[{int(t0//60):02d}:{int(t0%60):02d} ({t0:.1f}s -> {t1:.1f}s)] {txt}"
-            for t0, t1, txt in compact_entries if t0 <= 3450.0
-        ]
-        h2_lines = [
-            f"[{int(t0//60):02d}:{int(t0%60):02d} ({t0:.1f}s -> {t1:.1f}s)] {txt}"
-            for t0, t1, txt in compact_entries if t1 >= 3350.0
-        ]
-        h1_prompt = (
-            f"你是一位專業的香港商台叱咤903廣播節目剪輯專家。\n{show_info}\n{part_rules}\n"
-            "請僅針對以下【第一小時（上半場 0s ~ 3450s，包含 Part 1 與 Part 2）】逐字稿，"
-            "輸出整點新聞報時（約 3150s~3250s）之前的正片保留區間 JSON：{\"keep_intervals\": [{\"start\": 0.0, \"end\": 0.0, \"description\": \"...\"}]}\n\n"
-            + "\n".join(h1_lines)
-        )
-        h2_prompt = (
-            f"你是一位專業的香港商台叱咤903廣播節目剪輯專家。\n{show_info}\n{part_rules}\n"
-            "請僅針對以下【第二小時（下半場 3350s ~ 結束，包含 Part 3 與 Part 4）】逐字稿，"
-            "輸出整點新聞與交通廣告結束後（約 3650s~4150s 單元 Jingle 起拍）至節目完結片尾曲結束（12:00/19:00 新聞前）的正片保留區間 JSON："
-            "{\"keep_intervals\": [{\"start\": 0.0, \"end\": 0.0, \"description\": \"...\"}]}\n\n"
-            + "\n".join(h2_lines)
-        )
-        req_h1 = json.dumps({"contents": [{"parts": [{"text": h1_prompt}]}], "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}}).encode("utf-8")
-        req_h2 = json.dumps({"contents": [{"parts": [{"text": h2_prompt}]}], "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}}).encode("utf-8")
+    def _run_full_show_mode():
+        nonlocal last_error, successful_model, parsed, keep_intervals, cuts, report, best_fallback, ctx
+        for attempt in range(1, 3):
+            for idx, cand_model in enumerate(model_queue):
+                if "lite" in cand_model.lower():
+                    print(f"  🛑 略過 Lite 模型 [{cand_model}]（系統嚴格禁用 Lite 模型以確保剪輯精確度）")
+                    continue
+                round_str = f", 輪次 {attempt}/2" if attempt > 1 else ""
 
-        for cand_model in model_queue:
-            if "lite" in cand_model.lower():
-                continue
-            for k_idx, cur_key in enumerate(all_keys):
-                try:
-                    p1_json, ctx = _call_gemini_json(cand_model, cur_key, req_h1, timeout=90, ctx=ctx)
-                    p2_json, ctx = _call_gemini_json(cand_model, cur_key, req_h2, timeout=90, ctx=ctx)
-                    k1 = [x for x in _extract_gemini_intervals(p1_json, "keep_intervals") if float(x.get("end", 0)) <= 3450.0]
-                    k2 = [x for x in _extract_gemini_intervals(p2_json, "keep_intervals") if float(x.get("start", 0)) >= 3400.0]
-                    merged_raw = k1 + k2
-                    if len(merged_raw) >= 4:
+                # 支援多組 API Keys 自動輪替容錯（遇 429、503、Timeout 等錯誤自動換 Key 重試）
+                for k_idx, cur_key in enumerate(all_keys):
+                    key_tag = f" (Key #{k_idx+1})" if len(all_keys) > 1 else ""
+                    print(f"  🤖 嘗試調用 Gemini 模型 [{cand_model}]{key_tag} (順位 {idx+1}/{len(model_queue)}{round_str})...")
+                    is_quality_rejection = False
+                    try:
+                        parsed, ctx = _call_gemini_json(cand_model, cur_key, req_data, timeout=120, ctx=ctx)
+                        raw_keeps = _extract_gemini_intervals(parsed, "keep_intervals")
+                        if not raw_keeps:
+                            raise ValueError(f"模型 {cand_model} 未回傳有效的 keep_intervals")
+
+                        print(f"  🔍 [Pass 1 全局初劃完成] 成功識別出 {len(raw_keeps)} 個候選區間，啟動 [Pass 2 邊界顯微鏡深度覆核]...")
                         audited_keeps = audit_boundaries_with_gemini(
-                            raw_keeps=merged_raw,
+                            raw_keeps=raw_keeps,
                             transcript_segments=transcript_segments,
                             show_code=show_code,
                             api_key=cur_key,
                             model=cand_model,
                             total_duration=total_duration
                         )
+
+                        # 嚴格品質檢驗：調用品檢門禁進行自癒與多維度評分，若未通過或評分 < 80 嚴格禁止採用！
                         cand_passed, cand_keeps, cand_cuts, cand_report = inspect_and_verify_cut_quality(
                             audited_keeps, cuts=[], total_duration=total_duration,
                             transcript_segments=transcript_segments, show_code=show_code,
-                            engine_used=f"gemini ({cand_model} split-hour 2-Pass)"
+                            engine_used=f"gemini ({cand_model} 2-Pass)"
                         )
-                        if cand_passed and cand_report.get("score", 0) >= 80:
-                            successful_model = f"{cand_model}-split"
-                            keep_intervals = cand_keeps
-                            cuts = cand_cuts
-                            report = cand_report
-                            print(f"  ✨ [分時段雙半場模式] 模型 [{cand_model}] 分析成功並通過品檢門禁 (評分: {cand_report.get('score')}/100)！")
+                        cand_score = cand_report.get("score", 0)
+                        ad_check = cand_report.get("checks", {}).get("ad_contamination", "")
+                        if "PASS" in ad_check and len(cand_keeps) >= 4:
+                            if best_fallback is None or cand_score > best_fallback[0]:
+                                best_fallback = (cand_score, cand_model, cand_keeps, cand_cuts, cand_report)
+
+                        if not cand_passed or cand_score < 80:
+                            is_quality_rejection = True
+                            reasons = cand_report.get("failure_reasons", [])
+                            raise ValueError(f"模型 {cand_model} 產出區間未達品質標準 (Score: {cand_score}/100, passed={cand_passed}, 失敗項: {reasons})")
+
+                        successful_model = cand_model
+                        keep_intervals = cand_keeps
+                        cuts = cand_cuts
+                        report = cand_report
+                        if cand_model in all_models_list:
+                            model_idx = all_models_list.index(cand_model)
+                            record_gemini_model_success(cand_model, model_idx)
+
+                        print(f"  ✨ 模型 [{cand_model}]{key_tag} 分析成功並通過品檢門禁 (評分: {cand_score}/100)！")
+                        break
+
+                    except Exception as e:
+                        last_error = e
+                        if not is_quality_rejection:
+                            record_gemini_model_error(cand_model, e)
+                        if k_idx + 1 < len(all_keys):
+                            print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 調用失敗或品檢未達標 ({e})，自動無縫切換至 Key #{k_idx+2} 重試...")
+                            continue
+                        else:
+                            print(f"  ⚠️ 模型 [{cand_model}]{key_tag} 所有 Key 調用均失敗或品檢未達標: {e}，自動嘗試下一個候選模型...")
                             break
-                except Exception as split_err:
-                    last_error = split_err
-                    continue
+
+                if successful_model and keep_intervals and report:
+                    break
             if successful_model and keep_intervals and report:
                 break
+            if attempt < 2:
+                print("  ⏳ 第一輪所有候選模型調用遇到網絡或服務波動，等待 10 秒後啟動第二輪重試...")
+                time.sleep(10)
+
+    # 針對《聖艾粒LaLaLaLa》預設優先啟用【分時段雙半場精準模式】(在 18:00 長達 13~17 分鐘之新聞交通死區內安全切分，使 AI 專注度加倍、大幅降低尖峰廣告誤判)
+    if show_code == "ilub" and total_duration >= 6400.0:
+        _run_split_hour_mode("《聖艾粒LaLaLaLa》預設優先啟用上下半場獨立短請求拆解（18:00 死區安全切分，高專注度精準去廣告）...")
+        if not successful_model or not keep_intervals or not report:
+            print("  🔄 [分時段模式未達標] 自動退回 2 小時全篇聯合分析模式重試...")
+            _run_full_show_mode()
+    else:
+        _run_full_show_mode()
+        if not successful_model or not keep_intervals or not report:
+            _run_split_hour_mode("啟動上下半場獨立短請求拆解（大幅縮減單次 Token 體積與防 Timeout）...")
 
     if (not successful_model or not keep_intervals or not report) and best_fallback and best_fallback[0] >= 75:
         fb_score, fb_model, fb_keeps, fb_cuts, fb_report = best_fallback
