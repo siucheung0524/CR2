@@ -555,7 +555,8 @@ HALLUCINATION_PATTERNS = [
     "請不吝點贊", "请不吝点赞", "優優獨播劇場", "优优独播剧场", "Zither Harp",
     "點贊 訂閱", "点赞 订阅", "明鏡與點點", "明镜与点点", "明鏡需要", "明镜需要",
     "歡迎收看訂閱", "欢迎收看订阅", "YoYo Television", "字幕志愿者", "字幕志願者",
-    "中文字幕", "感謝觀看", "感谢观看", "謝謝觀看", "谢谢观看", "Amara.org"
+    "中文字幕", "感謝觀看", "感谢观看", "謝謝觀看", "谢谢观看", "Amara.org",
+    "MING PAO", "Ming Pao", "明報加拿大"
 ]
 
 # 候選 Gemini 旗艦/標準模型池（2026-11 實測具備免費額度之非 Lite 模型，搭配健康度與配額感知自動輪替）
@@ -1591,13 +1592,21 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
             txt = s.get("text", "")
             if 6550.0 <= st_sec <= last_end + 0.3:
                 if _has_kw(txt, outro_ad_words):
-                    if st_sec < last_end - 0.5:
+                    p_last_st = float(p_last["start"])
+                    if st_sec <= p_last_st + 5.0 and len(healed_keeps) >= 2:
+                        # 最後一小段完全位於片尾廣告之後（例如 18:59 的 10s 台呼孤島），直接整段剔除避免產生倒置區間！
+                        healed_items.append(f"Part 4 尾端孤島剔除：移除位於片尾廣告 ({txt[:16]}@{st_sec:.1f}s) 之後的殘留短段 {p_last_st:.1f}s~{last_end:.1f}s")
+                        healed_keeps.pop()
+                        p_last = healed_keeps[-1]
+                        last_end = float(p_last["end"])
+                        new_last_end = last_end
+                    elif st_sec < last_end - 0.5:
                         healed_items.append(f"Part 4 結尾由 {last_end:.1f}s 提早回縮至 {st_sec:.1f}s (切除片尾宣傳/整點新聞前廣告: {txt[:20]})")
                         p_last["end"] = round(st_sec, 2)
                         last_end = float(p_last["end"])
                         new_last_end = last_end
                     elif st_sec >= last_end - 0.5:
-                        pulled = round(max(6550.0, st_sec - 0.8), 2)
+                        pulled = round(max(p_last_st + 1.0, max(6550.0, st_sec - 0.8)), 2)
                         healed_items.append(f"Part 4 結尾由 {last_end:.1f}s 微調回縮至 {pulled:.1f}s (避開整點新聞起拍重疊: {txt[:20]})")
                         p_last["end"] = pulled
                         last_end = pulled
@@ -1771,6 +1780,20 @@ def inspect_and_verify_cut_quality(keep_intervals, cuts, total_duration, transcr
         split_healed_keeps.append(k)
     healed_keeps = split_healed_keeps
 
+    # 過濾任何異常倒置或極短（<= 1s）殘段，並合併緊鄰無破口區間（間距 <= 1.0s），確保簡介節數與 M4A 章節數 100% 一致
+    valid_sorted = sorted(
+        [k for k in healed_keeps if float(k["end"]) > float(k["start"]) + 1.0],
+        key=lambda x: float(x["start"])
+    )
+    normalized_keeps = []
+    for k in valid_sorted:
+        if normalized_keeps and float(k["start"]) <= float(normalized_keeps[-1]["end"]) + 1.0:
+            normalized_keeps[-1]["end"] = max(float(normalized_keeps[-1]["end"]), float(k["end"]))
+            if k.get("description") and k.get("description") not in normalized_keeps[-1].get("description", ""):
+                normalized_keeps[-1]["description"] = f"{normalized_keeps[-1].get('description', '')} / {k.get('description', '')}"
+        else:
+            normalized_keeps.append(dict(k))
+    healed_keeps = normalized_keeps
     # 計算自癒後純淨時長
     clean_duration = sum(float(k["end"]) - float(k["start"]) for k in healed_keeps)
     clean_dur_str = f"{int(clean_duration//3600):02d}:{int((clean_duration%3600)//60):02d}:{int(clean_duration%60):02d}"
