@@ -558,11 +558,14 @@ HALLUCINATION_PATTERNS = [
     "中文字幕", "感謝觀看", "感谢观看", "謝謝觀看", "谢谢观看", "Amara.org"
 ]
 
-# 候選 Gemini 旗艦 Flash 模型池（僅保留實測高可用、無長期 Hang 機之 Flash 模型）
+# 候選 Gemini 旗艦/標準模型池（2026-11 實測具備免費額度之非 Lite 模型，搭配健康度與配額感知自動輪替）
 DEFAULT_GEMINI_MODELS = [
-    "gemini-3-flash-preview",
+    "gemini-4-hydrogen",
     "gemini-3.6-flash",
-    "gemini-3.5-flash"
+    "gemini-3.5-flash",
+    "gemini-3-flash-preview",
+    "gemini-3.8-flash",
+    "gemini-3.7-flash",
 ]
 GEMINI_STATE_FILE = os.path.join(SCRIPT_DIR, ".gemini_model_state.json")
 
@@ -659,12 +662,18 @@ def get_next_gemini_models_sequence():
             state = {}
 
     daily_usage = state.get("daily_usage", {})
+    stats = state.get("stats", {})
     if state.get("daily_date") != today_str:
         daily_usage = {}
         state["daily_date"] = today_str
         state["daily_usage"] = daily_usage
+        # 跨日重設每日配額時，同步清除前一日 429 與連續錯誤懲罰
+        for m_st in stats.values():
+            if isinstance(m_st, dict):
+                m_st["consecutive_errors"] = 0
+                if "429" in str(m_st.get("last_error", "")):
+                    m_st["last_error"] = ""
 
-    stats = state.get("stats", {})
     start_idx = (last_idx + 1) % len(models)
     ordered_sequence = models[start_idx:] + models[:start_idx]
 
@@ -700,6 +709,7 @@ def record_gemini_model_success(model_name, model_index):
         m_stat = stats.setdefault(model_name, {"success": 0, "errors": 0, "consecutive_errors": 0})
         m_stat["success"] += 1
         m_stat["consecutive_errors"] = 0
+        m_stat["last_error"] = ""
         with open(GEMINI_STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2, ensure_ascii=False)
     except Exception as e:
